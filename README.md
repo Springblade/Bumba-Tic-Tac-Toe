@@ -14,7 +14,7 @@ The system is built using a **client-server architecture**, with each client run
 - ✅ GUI-based client interface (JavaFX/Swing)
 - ✅ Server supports multiple simultaneous clients and matches
 - ✅ User login system with username and password authentication
-- ✅ 🔸 In-game chat between two players in a match *(chat feature by Trieu)*
+- ✅ 🔸 In-game chat between two players in a match 
 - ⚡ Bonus-ready: support for larger boards, game rankings, emojis, etc.
 
 ---
@@ -22,7 +22,7 @@ The system is built using a **client-server architecture**, with each client run
 ## 🗂️ Project Structure
 
 /TicTacToeGame
-│
+│ 
 ├── /client                      # Client-side logic and interface
 │   ├── Client.java              # Connects to server, sends/receives data
 │   ├── ClientListener.java      # Listens to server responses (moves/chat)
