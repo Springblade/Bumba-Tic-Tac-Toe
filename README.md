@@ -21,41 +21,23 @@ The system is built using a **client-server architecture**, with each client run
 
 ## 🗂️ Project Structure
 
-/TicTacToeGame
-
-│ 
-
-├── /client                      # Client-side logic and interface
-
-│   ├── Client.java              # Connects to server, sends/receives data
-
-│   ├── ClientListener.java      # Listens to server responses (moves/chat)
-
-│   ├── GameWindow.java          # Main GUI frame (board + chat)
-
-│   ├── GamePanel.java           # Draws and handles the Tic-Tac-Toe board
-
-│   └── ChatPanel.java           # 🔸 Chat UI: input field, display area, send button
-
+TicTacToeGame/
+├── client/                         # Client-side logic and interface
+│   ├── Client.java                 # Connects to server, sends/receives data
+│   ├── ClientListener.java         # Listens to server responses (moves/chat)
+│   ├── GameWindow.java             # Main GUI frame (board + chat)
+│   ├── GamePanel.java              # Draws and handles the Tic-Tac-Toe board
+│   └── ChatPanel.java              # 🔸 Chat UI: input field, display area, send button
 │
-
-├── /server                      # Server-side logic
-
-│   ├── Server.java              # Initializes server and handles client connections
-
-│   ├── ClientHandler.java       # Communicates with individual clients
-
-│   ├── GameRoom.java            # Manages a match between two players
-
-│   └── UserDatabase.java        # Manages simple username/password file-based login
-
+├── server/                         # Server-side logic
+│   ├── Server.java                 # Initializes server and handles client connections
+│   ├── ClientHandler.java          # Communicates with individual clients
+│   ├── GameRoom.java               # Manages a match between two players
+│   └── UserDatabase.java           # Simple file-based login validation
 │
-
-├── /common                      # Shared constants and protocols
-
-│   └── MessageProtocol.java     # Defines standardized message tags like CHAT:, MOVE:
-
+├── common/                         # Shared constants and protocol formats
+│   └── MessageProtocol.java        # Defines standardized message tags like CHAT:, MOVE:
 │
+└── resources/                      # External data files
+    └── db.txt                      # Simulated user database (username:password)
 
-└── /resources
-    └── db.txt                   # Simulated user database (username:password)
