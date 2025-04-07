@@ -1,4 +1,4 @@
-# 🕹️ Networked Multiplayer Tic-Tac-Toe Game with Chat
+# 🕹️ Networked Multiplayer Tic-Tac-Toe Game 
 
 ## Overview
 
