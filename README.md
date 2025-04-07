@@ -23,7 +23,9 @@ The system is built using a **client-server architecture**, with each client run
 
 /TicTacToeGame
 │ 
+
 ├── /client                      # Client-side logic and interface
+
 │   ├── Client.java              # Connects to server, sends/receives data
 │   ├── ClientListener.java      # Listens to server responses (moves/chat)
 │   ├── GameWindow.java          # Main GUI frame (board + chat)
