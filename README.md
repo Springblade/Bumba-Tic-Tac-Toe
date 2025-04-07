@@ -21,6 +21,9 @@ The system is built using a **client-server architecture**, with each client run
 
 ## 🗂️ Project Structure
 
+### 📁 Project Structure
+
+```plaintext
 TicTacToeGame/
 ├── client/                         # Client-side logic and interface
 │   ├── Client.java                 # Connects to server, sends/receives data
@@ -40,4 +43,5 @@ TicTacToeGame/
 │
 └── resources/                      # External data files
     └── db.txt                      # Simulated user database (username:password)
+
 
