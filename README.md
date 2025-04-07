@@ -21,8 +21,6 @@ The system is built using a **client-server architecture**, with each client run
 
 ## 🗂️ Project Structure
 
-### 📁 Project Structure
-
 ```plaintext
 TicTacToeGame/
 ├── client/                         # Client-side logic and interface
