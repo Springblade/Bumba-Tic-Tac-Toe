@@ -58,5 +58,4 @@ The system is built using a **client-server architecture**, with each client run
 │
 
 └── /resources
-
     └── db.txt                   # Simulated user database (username:password)
