@@ -1,6 +1,7 @@
 package com.bumba.tic_tac_toe.Controller;
 
 import com.bumba.tic_tac_toe.client.Client;
+
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -8,6 +9,7 @@ import javafx.scene.layout.GridPane;
 
 public class GameController {
     @FXML private GridPane board;
+    private Client client;
 
     public void setClient(Client client) {
         this.client = client;
