@@ -3,6 +3,7 @@ package com.bumba.tic_tac_toe.server;
 import com.bumba.tic_tac_toe.enumeration.GameState;
 import com.bumba.tic_tac_toe.game.TicTacToe;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -152,5 +153,13 @@ public class GamesManager {
     }
     public Map<String, String> getSpectators() {
         return spectators;
+    }
+
+    /**
+     * Returns a collection of all ongoing games currently managed.
+     * Useful to display or manage all active sessions.
+     */
+    public Collection<TicTacToe> getAllGames() {
+        return games.values();
     }
 }

@@ -3,11 +3,13 @@ package com.bumba.tic_tac_toe.server;
 import com.bumba.tic_tac_toe.ServerMain;
 import com.bumba.tic_tac_toe.game.TicTacToe;
 
+import java.util.Collection;
+
 /**
  * Parses a raw command string from a client and dispatches to GamesManager.
  * Builds a standardized response to send back.
  */
-public class SessionController {
+class SessionController {
 
     private final GamesManager gm;
     private final String command;
@@ -90,7 +92,18 @@ public class SessionController {
                         ? "SPECTATING-" + parts[2]
                         : "ERROR-Game not found: " + parts[2];
                 break;
-
+            case "list_games":
+                Collection<TicTacToe> allGames = gm.getAllGames();
+                if (allGames.isEmpty()) {
+                    result = "NO_GAMES";
+                } else {
+                    StringBuilder sb = new StringBuilder("GAMES_LIST");
+                    for (TicTacToe game : allGames) {
+                        sb.append("-").append(game.getGameId());
+                    }
+                    result = sb.toString();
+                }
+                break;
             default:
                 result = "ERROR-Unknown command: " + tag;
         }
