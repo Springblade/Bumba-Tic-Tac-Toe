@@ -8,13 +8,16 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.bumba.tic_tac_toe.game.GamesManager;
 import com.bumba.tic_tac_toe.server.clientHandler;
+
 public class ServerMain {
     private static final int PORT = 5000;
     private static final int MAX_CLIENTS = 50;
     private static List<clientHandler> clients = new ArrayList<>();
     private static ExecutorService threadPool = Executors.newFixedThreadPool(MAX_CLIENTS);
     private static ServerSocket serverSocket;
+    private static GamesManager gamesManager = new GamesManager();
 
     public static void main(String[] args) {
         System.out.println("Starting Tic Tac Toe Server on port " + PORT + "...");
@@ -70,7 +73,7 @@ public class ServerMain {
             // Close all client connections
             synchronized (clients) {
                 for (clientHandler client : clients) {
-                    client.sendMessage("SERVER: Server is shutting down");
+                    client.sendMessage("SERVER-Server is shutting down");
                 }
                 clients.clear();
             }
@@ -85,6 +88,11 @@ public class ServerMain {
         return clients;
     }
 
+    public static GamesManager getGamesManager() {
+        return gamesManager;
+    }
+
+    // Broadcast to all clients (lobby)
     public static void broadcastToAll(String message, clientHandler sender) {
         synchronized (clients) {
             for (clientHandler client : clients) {
@@ -92,6 +100,57 @@ public class ServerMain {
                     client.sendMessage(message);
                 }
             }
+        }
+    }
+
+    // Broadcast to clients in the same game (excluding sender)
+    public static void broadcastToGame(String gameId, String message, clientHandler sender) {
+        synchronized (clients) {
+            for (clientHandler client : clients) {
+                if (client != sender && client.isAuthenticated() && client.isInGame(gameId)) {
+                    client.sendMessage(message);
+                }
+            }
+        }
+    }
+
+    // Broadcast to all players in a specific game (including sender)
+    public static void broadcastToGamePlayers(String gameId, String message) {
+        synchronized (clients) {
+            for (clientHandler client : clients) {
+                if (client.isAuthenticated() && client.isInGame(gameId)) {
+                    client.sendMessage(message);
+                }
+            }
+        }
+    }
+
+    // Broadcast to spectators of a game
+    public static void broadcastToSpectators(String gameId, String message) {
+        synchronized (clients) {
+            for (clientHandler client : clients) {
+                if (client.isAuthenticated() && client.isSpectating(gameId)) {
+                    client.sendMessage(message);
+                }
+            }
+        }
+    }
+
+    // Broadcast to both players and spectators in a game
+    public static void broadcastToGameSession(String gameId, String message) {
+        synchronized (clients) {
+            for (clientHandler client : clients) {
+                if (client.isAuthenticated() && 
+                    (client.isInGame(gameId) || client.isSpectating(gameId))) {
+                    client.sendMessage(message);
+                }
+            }
+        }
+    }
+
+    public static void removeClient(clientHandler client) {
+        synchronized (clients) {
+            clients.remove(client);
         }
     }
 }
