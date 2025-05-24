@@ -3,11 +3,11 @@ package com.bumba.tic_tac_toe.database;
 import java.sql.*;
 
 public class LogIn {
-    public static String loginAccount(String username, String password) {
+    public static boolean loginAccount(String username, String password) {
         if (check(username, password)) {
-            return "Success";
+            return true;
         } else {
-            return "Invalid username or password.";
+            return false;
         }
     }
 

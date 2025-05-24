@@ -1,21 +1,15 @@
 package com.bumba.tic_tac_toe.database;
 
 import java.sql.*;
-import java.util.Scanner;
 
 public class Create {
-    public static String createAccount() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter username:");
-        String username = scanner.nextLine();
-        System.out.println("Enter password:");
-        String password = scanner.nextLine();
+    public static boolean createAccount(String username,String password) {
         if (unique(username)){
             insert(username, password);
-            return "Created";
+            return true;
         }
         else {
-            return "Username already exists. Please choose a different username.";
+            return false;
         }
     }
 

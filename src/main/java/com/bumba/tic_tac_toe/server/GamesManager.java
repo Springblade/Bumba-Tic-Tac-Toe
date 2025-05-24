@@ -1,6 +1,7 @@
-package com.bumba.tic_tac_toe.game;
+package com.bumba.tic_tac_toe.server;
 
 import com.bumba.tic_tac_toe.enumeration.GameState;
+import com.bumba.tic_tac_toe.game.TicTacToe;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
