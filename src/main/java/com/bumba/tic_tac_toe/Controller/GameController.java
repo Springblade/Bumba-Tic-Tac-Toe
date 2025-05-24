@@ -1,6 +1,7 @@
 package com.bumba.tic_tac_toe.Controller;
 
 import com.bumba.tic_tac_toe.ClientMain;
+
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -10,15 +11,17 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import static com.bumba.tic_tac_toe.ClientMain;
 
 public class GameController {
     @FXML private GridPane board3x3;
@@ -32,6 +35,7 @@ public class GameController {
     @FXML private ListView<?> chatArea;
     @FXML private TextField chatBox;
 
+    @FXML private ImageView grid0;
     @FXML private ImageView grid1;
     @FXML private ImageView grid2;
     @FXML private ImageView grid3;
@@ -123,24 +127,33 @@ public class GameController {
     @FXML private ImageView grid79;
     @FXML private ImageView grid80;
 
+    @FXML private Media media;
+    @FXML private MediaPlayer clickSfxPlayer;
+
     @FXML private Scene scene;
     @FXML private Parent root;
     @FXML private Stage stage;
 
     private ClientMain client;
     private int dimension;
+    private String symbol;
     ArrayList<ImageView> grids;
+    private Image symbolX;
+    private Image symbolO;
+    private int turn;
+
+
 
     @FXML
     public void initialize() {
-        if(dimension==0) {
-            client.sendMessage("game-getDimension");
-            //get the dimension of the game
+        //get player name
+        if(dimension!=3||dimension!=9) {
+            dimension=client.sendRequestToServer("init","dimension");
         }
         if(dimension == 3){
             board3x3.setVisible(true);
             board9x9.setVisible(false);
-            grids = new ArrayList<>(Arrays.asList(grid1, grid2, grid3, grid4, grid5, grid6, grid7, grid8));
+            grids = new ArrayList<>(Arrays.asList(grid0,grid1, grid2, grid3, grid4, grid5, grid6, grid7, grid8));
         } else if (dimension == 9) {
             board3x3.setVisible(false);
             board9x9.setVisible(true);
@@ -158,31 +171,70 @@ public class GameController {
         } else {
             System.out.println("Invalid dimension: " + dimension);
         }
+
+        String clickSfx = new File("/src/main/resources/com/bumba/tic_tac_toe/sfx/click.mp3").toURI().toString();
+        Media clickSound = new Media(clickSfx);
+        clickSfxPlayer = new MediaPlayer(clickSound);
+
+        Image symbolX = new Image("src/main/resources/com/bumba/tic_tac_toe/img/X.png");
+        Image symbolO = new Image("src/main/resources/com/bumba/tic_tac_toe/img/O.png");
+
+        int turn = 1;
     }
 
     @FXML
     protected void onClick() {
-
+        clickSfxPlayer.seek(clickSfxPlayer.getStartTime());
+        clickSfxPlayer.play();
     }
 
     private void handleButtonPress(ActionEvent event) {
         Button clickedButton = (Button) event.getSource();
+        onClick();
 
         int row = GridPane.getRowIndex(clickedButton) == null ? 0 : GridPane.getRowIndex(clickedButton);
         int col = GridPane.getColumnIndex(clickedButton) == null ? 0 : GridPane.getColumnIndex(clickedButton);
 
-        int move = row * 3 + col;
-        board3x3.setDisable(true);
-        board9x9.setDisable(true);
-        client.sendMessage("move-" + move);
+        int move = 0;
+        if(dimension == 3) {
+            move = row * 3 + col;
+            board3x3.setDisable(true);
+        } else if (dimension == 9) {
+            move = row * 9 + col;
+            board9x9.setDisable(true);
+        }
+        client.sendGameMove(String.valueOf(move));
+        updateBoard(move);
     }
 
-    private void sendRequestToServer() {
-        client.sendMessage(request);
+    private void moveFromServer(int move) {
+        //missing processing of server response
+
+        updateBoard(move);
+        if(dimension == 3) {
+            board3x3.setDisable(false);
+        } else if (dimension == 9) {
+            board9x9.setDisable(false);
+        }
     }
 
-    private void handleServerResponse(String response) {
+    private void updateBoard(int move) {
 
+        switch(symbol){
+            case "X":
+                if(turn%2==1){
+                    grids.get(move).setImage(symbolX);
+                }
+                else grids.get(move).setImage(symbolO);
+                break;
+            case "O":
+                if(turn%2==1){
+                    grids.get(move).setImage(symbolO);
+                }
+                else grids.get(move).setImage(symbolX);
+                break;
+        }
+        turn++;
     }
 
     @FXML

@@ -2,6 +2,8 @@ module com.bumba.tic_tac_toe {
     requires javafx.controls;
     requires javafx.fxml;
     requires java.sql;
+    requires java.desktop;
+    requires javafx.media;
 
 
     opens com.bumba.tic_tac_toe to javafx.fxml;

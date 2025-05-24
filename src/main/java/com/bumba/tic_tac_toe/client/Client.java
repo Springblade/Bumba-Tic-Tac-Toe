@@ -103,6 +103,11 @@ public class Client {
             case "PONG":
                 System.out.println("Ping successful");
                 break;
+            case "GAMES_LIST":
+
+            case "NO_GAMES":
+                onMessageReceived.accept(message);
+                break;
             default:
                 onMessageReceived.accept(message);
                 break;
@@ -190,6 +195,12 @@ public class Client {
         }
     }
 
+    // Request the list of games from the server
+    public String[] getGameList() {
+        sendMessage("list_games");
+        return null;
+    }
+
     // Connection management
     public void ping() {
         sendMessage("ping");
@@ -233,11 +244,11 @@ public class Client {
 //        return board;
 //    }
 
-//    public void setBoard(String[][] board) {
-//        this.board = board;
-//    }
 
     public String getUsername() {
         return username;
     }
+
+
 }
+

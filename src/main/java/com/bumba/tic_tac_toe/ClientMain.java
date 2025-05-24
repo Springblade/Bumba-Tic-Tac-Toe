@@ -49,13 +49,6 @@ public class ClientMain extends Application {
         }
     }
 
-    public static void sendMessage(String msg) {
-        if (client != null && client.isConnected()) {
-            client.sendMessage(msg);
-        } else {
-            System.err.println("Cannot send message: client not connected");
-        }
-    }
 
     public static void login(String username, String password) {
         if (client != null) {
@@ -67,6 +60,10 @@ public class ClientMain extends Application {
         if (client != null) {
             client.register(username, password);
         }
+    }
+
+    private void sendRequestToServer( String type, String request) {
+        //send request to server with specified type for init of game
     }
 
     public static void sendGameMove(String moveIndex) {
@@ -84,6 +81,12 @@ public class ClientMain extends Application {
     public static void sendChatMessage(String content) {
         if (client != null) {
             client.sendChatMessage(content);
+        }
+    }
+
+    public String[] getGameList() {
+        if (client != null) {
+            return client.getGameList();
         }
     }
 
@@ -119,7 +122,9 @@ public class ClientMain extends Application {
                 break;
             case "GAME_MOVE":
                 System.out.println("Game move: " + content);
+
                 // Update game board here
+
                 break;
             case "USER_JOIN":
             case "USER_LEAVE":
@@ -145,17 +150,11 @@ public class ClientMain extends Application {
         return client;
     }
 
-    public void processMessage(String type, String message) {
-        System.out.println("Processing message: " + message);
-    }
-
-//    public String[] getGameList() {
-//        return client.getGameList();
-//    }
 
     public static void main(String[] args) {
         launch();
     }
+
 
 
 }

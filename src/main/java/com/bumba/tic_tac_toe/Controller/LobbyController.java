@@ -3,6 +3,7 @@ package com.bumba.tic_tac_toe.Controller;
 import com.bumba.tic_tac_toe.ClientMain;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -24,6 +25,8 @@ public class LobbyController {
     @FXML private Button spectateButton;
     @FXML private Button refreshButton;
     @FXML private Button joinGameButton;
+    @FXML private Button newGame3x3;
+    @FXML private Button newGame9x9;
     @FXML private Label IDLabel;
     @FXML private Label statusLabel;
 
@@ -48,6 +51,9 @@ public class LobbyController {
                 games.add(newGame);
             }
         }
+
+        newGame3x3.setOnAction(event -> createGame(3));
+        newGame9x9.setOnAction(event -> createGame(9));
 
 
         gameListView.setItems(games);
@@ -93,20 +99,27 @@ public class LobbyController {
     }
 
     @FXML
-    protected void createGame() {
-        //create game session
+    protected void chooseBoard(ActionEvent event) {
+        createGameButton.setVisible(false);
+        newGame3x3.setVisible(true);
+        newGame9x9.setVisible(true);
+    }
+
+    @FXML
+    protected void createGame(int dimension) {
+        //send create game message to server
     }
 
     protected void joinGame() {
-        //send msg to server
+        //send join game message to server
     }
 
     protected void spectate() {
-        //send msg to server
+        //send spectate message to server
     }
 
     protected void quickJoin() {
-        //send msg to server
+        //send quick join message to server
     }
 
 

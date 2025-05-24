@@ -8,6 +8,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
@@ -18,6 +19,7 @@ public class AuthenController {
     @FXML private TextField password;
     @FXML private Button login;
     @FXML private Button signup;
+    @FXML private Label errorLabel;
 
     @FXML private Scene scene;
     @FXML private Parent root;
@@ -27,20 +29,16 @@ public class AuthenController {
 
     @FXML
     private void LogIn(ActionEvent event) {
-        clientMain.sendMessage("LogIn");
-        clientMain.sendMessage(username.getText());
-        clientMain.sendMessage(password.getText());
+        clientMain.login(username.getText(),password.getText());
     }
 
     @FXML
     private void SignUp(ActionEvent event) {
-        clientMain.sendMessage("SignUp");
-        clientMain.sendMessage(username.getText());
-        clientMain.sendMessage(password.getText());
+        clientMain.register(username.getText(),password.getText());
     }
 
-    public void handleServerResponse(String response) {
-        //get the response from the server
+    public void handleError(String errorMessage) {
+        errorLabel.setText(errorMessage);
     }
 
     @FXML
