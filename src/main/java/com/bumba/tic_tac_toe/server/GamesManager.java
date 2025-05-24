@@ -14,10 +14,15 @@ public class GamesManager {
     private final Map<String, String> spectators = new ConcurrentHashMap<>();
 
     public GamesManager() {
-        // nothing else to init
+        // No special initialization needed beyond our maps
     }
 
-    /** Create a new game and put player1 into waiting state */
+    /**
+     * Create a brand-new game for `player` as player1.
+     * - Tears down any existing session for this player.
+     * - Sets initial board and state to WAITING_FOR_PLAYER.
+     * - Registers the game in all relevant maps.
+     */
     public synchronized TicTacToe newGame(String player) {
         leaveGame(player);
         TicTacToe game = new TicTacToe();
@@ -31,11 +36,19 @@ public class GamesManager {
         return game;
     }
 
-    /** Join a specific waiting game */
+    /**
+     * Join an existing waiting game.
+     * - Removes any prior session for this `player`.
+     * - If `gameId` is valid and slot for player2 is free, assigns player2
+     *   and flips state to PLAYER1_TURN.
+     * - Removes the original creator from waiting list.
+     */
     public synchronized TicTacToe joinGame(String player, String gameId) {
         leaveGame(player);
         TicTacToe game = games.get(gameId);
-        if (game == null || game.getPlayer2() != null) return null;
+        if (game == null || game.getPlayer2() != null) {
+            return null; // cannot join non-existent or already-full game
+        }
         game.setPlayer2(player);
         game.setGameState(GameState.PLAYER1_TURN);
         players.put(player, gameId);
@@ -43,77 +56,100 @@ public class GamesManager {
         return game;
     }
 
-    /** Either return an existing session, join the first waiting game, or create one */
+    /**
+     * Quick-join logic:
+     * - If already in a game, return that session.
+     * - Otherwise, pick the first waiting game and join it.
+     * - If none are waiting, create a new one.
+     */
     public synchronized TicTacToe quickJoin(String player) {
         TicTacToe existing = getGameByPlayer(player);
-        if (existing != null) return existing;
-
-        // pick any waiting game
+        if (existing != null) {
+            return existing;
+        }
         String waitingGameId = waitingPlayers.values().stream().findFirst().orElse(null);
         if (waitingGameId != null) {
             return joinGame(player, waitingGameId);
         }
-
         return newGame(player);
     }
 
-    /** Add a spectator to a game */
+    /**
+     * Add `spectator` to watch the game with `gameId`.
+     * Returns true on success, false if no such game exists.
+     */
     public synchronized boolean spectateGame(String spectator, String gameId) {
         TicTacToe game = games.get(gameId);
-        if (game == null) return false;
+        if (game == null) {
+            return false;
+        }
         spectators.put(spectator, gameId);
         return true;
     }
 
-    /** Remove a player/spectator from any session, tearing down games as needed */
+    /**
+     * Leave any session (waiting, playing, or spectating) for `player`.
+     * - If waiting: cancels game completely.
+     * - If playing: tears down the game and removes both players.
+     * - If spectating: simply removes spectator entry.
+     */
     public synchronized void leaveGame(String player) {
-        // If waiting to start
+        // waiting-to-start case
         if (waitingPlayers.containsKey(player)) {
             String gid = waitingPlayers.remove(player);
             games.remove(gid);
             players.remove(player);
             return;
         }
-        // If playing
+        // in-progress case
         if (players.containsKey(player)) {
             String gid = players.remove(player);
             TicTacToe game = games.remove(gid);
             if (game != null) {
-                String other = game.getPlayer1().equals(player) ? game.getPlayer2() : game.getPlayer1();
-                if (other != null) players.remove(other);
+                String other = game.getPlayer1().equals(player)
+                        ? game.getPlayer2()
+                        : game.getPlayer1();
+                if (other != null) {
+                    players.remove(other);
+                }
             }
             return;
         }
-        // If spectating
+        // spectating case
         spectators.remove(player);
     }
 
+    /** Retrieve a game by its ID, or null if none exists. */
     public TicTacToe getGame(String gameId) {
         return games.get(gameId);
     }
 
+    /**
+     * Find a game where `player` is either player1 or player2.
+     * Returns null if not found.
+     */
     public TicTacToe getGameByPlayer(String player) {
         return games.values().stream()
                 .filter(g -> player.equals(g.getPlayer1()) || player.equals(g.getPlayer2()))
-                .findFirst().orElse(null);
+                .findFirst()
+                .orElse(null);
     }
 
+    /** Remove a game outright (e.g. cleanup). */
     public void removeGame(String gameId) {
         games.remove(gameId);
     }
 
+    /** Expose internal maps for introspection or administration. */
     public Map<String, TicTacToe> getGames() {
         return games;
     }
-
     public Map<String, String> getWaitingPlayers() {
         return waitingPlayers;
     }
-
     public Map<String, String> getPlayers() {
         return players;
     }
-
     public Map<String, String> getSpectators() {
         return spectators;
     }
