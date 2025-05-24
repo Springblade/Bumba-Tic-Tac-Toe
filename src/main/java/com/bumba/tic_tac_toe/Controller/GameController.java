@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static com.bumba.tic_tac_toe.ClientMain;
+import com.bumba.tic_tac_toe.ClientMain;
 
 public class GameController {
     @FXML private GridPane board3x3;

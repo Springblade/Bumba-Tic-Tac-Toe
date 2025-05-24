@@ -8,79 +8,84 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class GamesManager {
 
-    private final Map<String, TicTacToe> games;
-    protected final Map<String, String> waitingPlayers;
-    protected final Map<String, String> players;
-    protected final Map<String, String> spectators;
+    private final Map<String, TicTacToe> games = new ConcurrentHashMap<>();
+    private final Map<String, String> waitingPlayers = new ConcurrentHashMap<>();
+    private final Map<String, String> players = new ConcurrentHashMap<>();
+    private final Map<String, String> spectators = new ConcurrentHashMap<>();
 
     public GamesManager() {
-        games = new ConcurrentHashMap<>();
-        waitingPlayers = new ConcurrentHashMap<>();
-        players = new ConcurrentHashMap<>();
-        spectators = new ConcurrentHashMap<>();
+        // nothing else to init
     }
 
+    /** Create a new game and put player1 into waiting state */
     public synchronized TicTacToe newGame(String player) {
-        TicTacToe TicTacToe = new TicTacToe(player, null);
-        games.put(TicTacToe.getGameId(), TicTacToe);
-        waitingPlayers.put(player, TicTacToe.getGameId());
-        return TicTacToe;
+        leaveGame(player);
+        TicTacToe game = new TicTacToe();
+        String gameId = game.getGameId();
+        game.setPlayer1(player);
+        game.setGameState(GameState.WAITING_FOR_PLAYER);
+        game.setBoard();
+        games.put(gameId, game);
+        waitingPlayers.put(player, gameId);
+        players.put(player, gameId);
+        return game;
     }
 
-    public synchronized TicTacToe joinGame(String player,String gameId) {
-        TicTacToe TicTacToe = games.get(gameId);
-        TicTacToe.setPlayer2(player);
-        TicTacToe.setGameState(GameState.PLAYER1_TURN);
-        return TicTacToe;
+    /** Join a specific waiting game */
+    public synchronized TicTacToe joinGame(String player, String gameId) {
+        leaveGame(player);
+        TicTacToe game = games.get(gameId);
+        if (game == null || game.getPlayer2() != null) return null;
+        game.setPlayer2(player);
+        game.setGameState(GameState.PLAYER1_TURN);
+        players.put(player, gameId);
+        waitingPlayers.remove(game.getPlayer1());
+        return game;
     }
 
+    /** Either return an existing session, join the first waiting game, or create one */
     public synchronized TicTacToe quickJoin(String player) {
-        if (games.values().stream().anyMatch(TicTacToe -> TicTacToe.getPlayer1().equals(player) || (TicTacToe.getPlayer2() != null && TicTacToe.getPlayer2().equals(player)))) {
-            return games.values().stream().filter(TicTacToe -> TicTacToe.getPlayer1().equals(player) || TicTacToe.getPlayer2().equals(player)).findFirst().get();
+        TicTacToe existing = getGameByPlayer(player);
+        if (existing != null) return existing;
+
+        // pick any waiting game
+        String waitingGameId = waitingPlayers.values().stream().findFirst().orElse(null);
+        if (waitingGameId != null) {
+            return joinGame(player, waitingGameId);
         }
 
-        for (TicTacToe TicTacToe : games.values()) {
-            if (TicTacToe.getPlayer1() != null && TicTacToe.getPlayer2() == null) {
-                TicTacToe.setPlayer2(player);
-                TicTacToe.setGameState(GameState.PLAYER1_TURN);
-                return TicTacToe;
-            }
-        }
-
-        TicTacToe TicTacToe = new TicTacToe(player, null);
-        games.put(TicTacToe.getGameId(), TicTacToe);
-        waitingPlayers.put(player, TicTacToe.getGameId());
-        return TicTacToe;
+        return newGame(player);
     }
 
-    public synchronized TicTacToe leaveGame(String player) {
-        String gameId = getGameByPlayer(player) != null ? getGameByPlayer(player).getGameId() : null;
-        if (gameId != null) {
-            waitingPlayers.remove(player);
-            TicTacToe game = games.get(gameId);
-            if (player.equals(game.getPlayer1())) {
-                if (game.getPlayer2() != null) {
-                    game.setPlayer1(game.getPlayer2());
-                    game.setPlayer2(null);
-                    game.setGameState(GameState.WAITING_FOR_PLAYER);
-                    game.setBoard();
-                    waitingPlayers.put(game.getPlayer1(), game.getGameId());
-                } else {
-                    games.remove(gameId);
-                    if (games.isEmpty()) {
-                        //shutdown
-                    }
-                    return null;
-                }
-            } else if (player.equals(game.getPlayer2())) {
-                game.setPlayer2(null);
-                game.setGameState(GameState.WAITING_FOR_PLAYER);
-                game.setBoard();
-                waitingPlayers.put(game.getPlayer1(), game.getGameId());
-            }
-            return game;
+    /** Add a spectator to a game */
+    public synchronized boolean spectateGame(String spectator, String gameId) {
+        TicTacToe game = games.get(gameId);
+        if (game == null) return false;
+        spectators.put(spectator, gameId);
+        return true;
+    }
+
+    /** Remove a player/spectator from any session, tearing down games as needed */
+    public synchronized void leaveGame(String player) {
+        // If waiting to start
+        if (waitingPlayers.containsKey(player)) {
+            String gid = waitingPlayers.remove(player);
+            games.remove(gid);
+            players.remove(player);
+            return;
         }
-        return null;
+        // If playing
+        if (players.containsKey(player)) {
+            String gid = players.remove(player);
+            TicTacToe game = games.remove(gid);
+            if (game != null) {
+                String other = game.getPlayer1().equals(player) ? game.getPlayer2() : game.getPlayer1();
+                if (other != null) players.remove(other);
+            }
+            return;
+        }
+        // If spectating
+        spectators.remove(player);
     }
 
     public TicTacToe getGame(String gameId) {
@@ -88,8 +93,9 @@ public class GamesManager {
     }
 
     public TicTacToe getGameByPlayer(String player) {
-        return games.values().stream().filter(game -> game.getPlayer1().equals(player) || (game.getPlayer2() != null &&
-                game.getPlayer2().equals(player))).findFirst().orElse(null);
+        return games.values().stream()
+                .filter(g -> player.equals(g.getPlayer1()) || player.equals(g.getPlayer2()))
+                .findFirst().orElse(null);
     }
 
     public void removeGame(String gameId) {
@@ -98,5 +104,17 @@ public class GamesManager {
 
     public Map<String, TicTacToe> getGames() {
         return games;
+    }
+
+    public Map<String, String> getWaitingPlayers() {
+        return waitingPlayers;
+    }
+
+    public Map<String, String> getPlayers() {
+        return players;
+    }
+
+    public Map<String, String> getSpectators() {
+        return spectators;
     }
 }
