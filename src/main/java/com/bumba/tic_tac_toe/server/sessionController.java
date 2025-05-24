@@ -4,7 +4,7 @@ import com.bumba.tic_tac_toe.ServerMain;
 import com.bumba.tic_tac_toe.game.TicTacToe;
 
 /**
- * Parses a raw command string from a client and dispatches to GamesManager
+ * Parses a raw command string from a client and dispatches to GamesManager.
  * Builds a standardized response to send back.
  */
 public class SessionController {
