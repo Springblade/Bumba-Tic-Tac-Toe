@@ -1,6 +1,9 @@
 package com.bumba.tic_tac_toe.database;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Create {
     public static boolean createAccount(String username,String password) {

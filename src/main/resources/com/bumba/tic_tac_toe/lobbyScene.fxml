@@ -24,7 +24,7 @@
          </menus>
       </MenuBar>
       <Button fx:id="quickJoinButton" layoutX="513.0" layoutY="360.0" mnemonicParsing="false" text="Quick Join" />
-      <ListView layoutX="14.0" layoutY="29.0" prefHeight="370.0" prefWidth="490.0" />
+      <ListView fx:id="gameListView" layoutX="14.0" layoutY="29.0" prefHeight="370.0" prefWidth="490.0" />
       <Button fx:id="createGameButton" layoutX="507.0" layoutY="282.0" mnemonicParsing="false" onAction="#chooseBoard" text="Create Game" />
       <Button fx:id="new9x9game" layoutX="556.0" layoutY="282.0" mnemonicParsing="false" text="9x9" visible="false" />
       <Button fx:id="new3x3game" layoutX="507.0" layoutY="282.0" mnemonicParsing="false" text="3x3" visible="false" />

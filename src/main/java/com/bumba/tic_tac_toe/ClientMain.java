@@ -14,6 +14,8 @@ public class ClientMain extends Application {
 
     private static Client client;
     private static ClientMain instance;
+    private static AuthenController authenController;
+    private static LobbyController lobbyController;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -21,6 +23,8 @@ public class ClientMain extends Application {
 
         FXMLLoader fxmlLoader = new FXMLLoader(ClientMain.class.getResource("/com/bumba/tic_tac_toe/logInScene.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 600, 400);
+
+        authenController = fxmlLoader.getController();
         stage.setResizable(false);
         stage.setTitle("Tic Tac Toe");
         stage.setScene(scene);
@@ -37,6 +41,10 @@ public class ClientMain extends Application {
         });
 
         stage.show();
+    }
+    // Add this method to be called from AuthenController
+    public static void setLobbyController(LobbyController controller) {
+        lobbyController = controller;
     }
 
     public static void connect() {
@@ -88,6 +96,7 @@ public class ClientMain extends Application {
         return client.getGameList();
     }
 
+
     private void onMessageReceived(String message) {
         System.out.println("Message received in ClientMain: " + message);
 
@@ -105,6 +114,7 @@ public class ClientMain extends Application {
             case "LOGIN_SUCCESS":
                 System.out.println("Login successful: " + content);
                 // Navigate to lobby scene here
+                Platform.runLater(() -> authenController.transitionToLobbyScene());
                 break;
             case "LOGIN_FAILED":
                 System.err.println("Login failed: " + content);
@@ -115,6 +125,17 @@ public class ClientMain extends Application {
             case "REGISTER_FAILED":
                 System.err.println("Registration failed: " + content);
                 break;
+
+            case "GAME_CREATED":
+                System.out.println("Game created successfully with ID: " + content);
+                // The player is now waiting for an opponent to join
+                // The game is visible in the lobby for other players to join
+                break;    
+            case "GAME_AVAILABLE":
+                System.out.println("New game available in lobby: " + content);
+                // Refresh lobby game list if currently in lobby
+                Platform.runLater(() -> lobbyController.refresh());
+                break;                        
             case "CHAT":
                 System.out.println("Chat message: " + content);
                 break;

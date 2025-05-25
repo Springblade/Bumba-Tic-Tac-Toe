@@ -1,9 +1,9 @@
 package com.bumba.tic_tac_toe.server;
 
+import java.util.Collection;
+
 import com.bumba.tic_tac_toe.ServerMain;
 import com.bumba.tic_tac_toe.game.TicTacToe;
-
-import java.util.Collection;
 
 
 class SessionController {

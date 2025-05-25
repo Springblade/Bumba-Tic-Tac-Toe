@@ -104,8 +104,19 @@ public class Client {
                 System.out.println("Ping successful");
                 break;
             case "GAMES_LIST":
-
+                // Don't store locally - just pass to ClientMain
+                onMessageReceived.accept(message);
+                break;
             case "NO_GAMES":
+                // Don't store locally - just pass to ClientMain
+                onMessageReceived.accept(message);
+                break;
+            case "GAME_AVAILABLE":
+                // Pass real-time updates to ClientMain
+                onMessageReceived.accept(message);
+                break;
+            case "GAME_REMOVED":
+                // Pass real-time updates to ClientMain
                 onMessageReceived.accept(message);
                 break;
             default:
@@ -198,7 +209,7 @@ public class Client {
     // Request the list of games from the server
     public String[] getGameList() {
         sendMessage("list_games");
-        return null;
+        return new String[0];
     }
 
     // Connection management

@@ -40,7 +40,7 @@ public class AuthenController {
     }
 
     @FXML
-    private void transitionToLobbyScene() {
+    public void transitionToLobbyScene() {
         try {
             root = FXMLLoader.load(getClass().getResource("/com/bumba/tic_tac_toe/lobbyScene.fxml"));
             scene = new Scene(root);

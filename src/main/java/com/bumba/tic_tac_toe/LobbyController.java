@@ -1,5 +1,7 @@
 package com.bumba.tic_tac_toe;
 
+import java.io.IOException;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -14,8 +16,6 @@ import javafx.scene.control.ListView;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-
 public class LobbyController {
 
     @FXML private ListView<GameEntry> gameListView;
@@ -24,8 +24,8 @@ public class LobbyController {
     @FXML private Button spectateButton;
     @FXML private Button refreshButton;
     @FXML private Button joinGameButton;
-    @FXML private Button newGame3x3;
-    @FXML private Button newGame9x9;
+    @FXML private Button new3x3game;
+    @FXML private Button new9x9game;
     @FXML private Label IDLabel;
     @FXML private Label statusLabel;
 
@@ -43,7 +43,7 @@ public class LobbyController {
     @FXML
     public void initialize() {
         ObservableList<GameEntry> games = FXCollections.observableArrayList();
-        if(client.getGameList() != null) {
+        if(client != null && client.getGameList() != null) {
             for (String game : client.getGameList()) {
                 String[] parts = game.split(",");
                 GameEntry newGame = new GameEntry(parts[0], parts[1]);
@@ -51,8 +51,8 @@ public class LobbyController {
             }
         }
 
-        newGame3x3.setOnAction(event -> createGame(3));
-        newGame9x9.setOnAction(event -> createGame(9));
+        new3x3game.setOnAction(event -> createGame(3));
+        new9x9game.setOnAction(event -> createGame(9));
 
 
         gameListView.setItems(games);
@@ -84,10 +84,10 @@ public class LobbyController {
         });
     }
 
-    private void refresh() {
+    public void refresh() {
         gameListView.getItems().clear();
         ObservableList<GameEntry> games = FXCollections.observableArrayList();
-        if(client.getGameList() != null) {
+        if(client != null && client.getGameList() != null) {
             for (String game : client.getGameList()) {
                 String[] parts = game.split(",");
                 GameEntry newGame = new GameEntry(parts[0], parts[1]);
@@ -100,30 +100,91 @@ public class LobbyController {
     @FXML
     protected void chooseBoard(ActionEvent event) {
         createGameButton.setVisible(false);
-        newGame3x3.setVisible(true);
-        newGame9x9.setVisible(true);
+        new3x3game.setVisible(true);
+        new9x9game.setVisible(true);
     }
 
     @FXML
     protected void createGame(int dimension) {
-        //send create game message to server
+        // Send create game message to server
+        // Format: "create_game-username" (dimension would be set when game starts)
+        if(ClientMain.getClient() != null) {
+            ClientMain.getClient().sendMessage("create_game-" + ClientMain.getClient().getUsername());
+            System.out.println("Creating " + dimension + "x" + dimension + " game...");
+            
+            // Hide the dimension selection buttons after creating
+            new3x3game.setVisible(false);
+            new9x9game.setVisible(false);
+            createGameButton.setVisible(true);
+            
+            // Refresh the game list to show the new game
+            refresh();
+        }
     }
 
     protected void joinGame() {
-        //send join game message to server
+        // Get selected game from list
+        GameEntry selectedGame = gameListView.getSelectionModel().getSelectedItem();
+        if(selectedGame != null) {
+            joinGame(selectedGame.ID);
+        } else {
+            System.out.println("No game selected to join");
+        }
+    }
+    
+    // Overloaded method for direct game ID joining
+    protected void joinGame(String gameId) {
+        // Send join game message to server
+        // Format: "join_game-gameId"
+        if(ClientMain.getClient() != null && gameId != null) {
+            ClientMain.getClient().sendMessage("join_game-" + gameId);
+            System.out.println("Joining game: " + gameId);
+            
+            // Transition to game scene after joining
+            transitionToGame();
+        }
     }
 
     protected void spectate() {
-        //send spectate message to server
+        // Get selected game from list
+        GameEntry selectedGame = gameListView.getSelectionModel().getSelectedItem();
+        if(selectedGame != null) {
+            spectate(selectedGame.ID);
+        } else {
+            System.out.println("No game selected to spectate");
+        }
+    }
+    
+    // Overloaded method for direct game ID spectating
+    protected void spectate(String gameId) {
+        // Send spectate message to server
+        // Format: "spectate-gameId"
+        if(ClientMain.getClient() != null && gameId != null) {
+            ClientMain.getClient().sendMessage("spectate-" + gameId);
+            System.out.println("Spectating game: " + gameId);
+            
+            // Transition to game scene as spectator
+            transitionToGame();
+        }
     }
 
     protected void quickJoin() {
-        //send quick join message to server
+        // Send quick join message to server
+        // Format: "quick_join"
+        if(ClientMain.getClient() != null) {
+            ClientMain.getClient().sendMessage("quick_join");
+            System.out.println("Quick joining available game...");
+            
+            // The server will either:
+            // 1. Put player in waiting state for new game
+            // 2. Join existing waiting game and start immediately
+            // Handle transition based on server response in ClientMain
+        }
     }
 
 
     @FXML
-    private void transitionToGame() {
+    public void transitionToGame() {
         try {
             root = FXMLLoader.load(getClass().getResource("/com/bumba/tic_tac_toe/game.fxml"));
             scene = new Scene(root);

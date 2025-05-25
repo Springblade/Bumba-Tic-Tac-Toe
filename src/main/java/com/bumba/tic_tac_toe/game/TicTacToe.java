@@ -1,10 +1,10 @@
 package com.bumba.tic_tac_toe.game;
 
-import com.bumba.tic_tac_toe.enumeration.GameState;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import com.bumba.tic_tac_toe.enumeration.GameState;
 
 public class TicTacToe {
     private String gameId;
