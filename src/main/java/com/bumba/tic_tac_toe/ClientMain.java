@@ -19,7 +19,7 @@ public class ClientMain extends Application {
     public void start(Stage stage) throws IOException {
         instance = this;
 
-        FXMLLoader fxmlLoader = new FXMLLoader(ClientMain.class.getResource("/fxml/logInScene.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(ClientMain.class.getResource("/com/bumba/tic_tac_toe/logInScene.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 600, 400);
         stage.setResizable(false);
         stage.setTitle("Tic Tac Toe");

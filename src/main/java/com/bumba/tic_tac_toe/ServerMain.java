@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.bumba.tic_tac_toe.database.Connect;
 import com.bumba.tic_tac_toe.server.GamesManager;
 import com.bumba.tic_tac_toe.server.clientHandler;
 
@@ -21,6 +22,15 @@ public class ServerMain {
 
     public static void main(String[] args) {
         System.out.println("Starting Tic Tac Toe Server on port " + PORT + "...");
+
+        // Test database connection before starting server
+        System.out.println("Testing database connection...");
+        if (!testDatabaseConnection()) {
+            System.err.println("Failed to connect to database. Server cannot start.");
+            System.err.println("Please ensure PostgreSQL is running and database 'tictactoe' exists.");
+            System.exit(1);
+        }
+        System.out.println("Database connection successful!");
 
         try {
             serverSocket = new ServerSocket(PORT);
@@ -58,6 +68,31 @@ public class ServerMain {
         }
     }
 
+    // test database connection
+    private static boolean testDatabaseConnection() {
+        try {
+            java.sql.Connection conn = Connect.getConnection();
+            if (conn != null && !conn.isClosed()) {
+                System.out.println("Database connection test: SUCCESS");
+                conn.close();
+                return true;
+            }
+        } catch (java.sql.SQLException e) {
+            System.err.println("Database connection test: FAILED");
+            System.err.println("Error: " + e.getMessage());
+            
+            // Provide helpful error messages
+            if (e.getMessage().contains("Connection refused")) {
+                System.err.println("PostgreSQL server is not running or not accessible on localhost:5432");
+            } else if (e.getMessage().contains("database") && e.getMessage().contains("does not exist")) {
+                System.err.println("Database 'tictactoe' does not exist. Please create it first.");
+            } else if (e.getMessage().contains("authentication failed")) {
+                System.err.println("Database authentication failed. Check username/password in Connect.java");
+            }
+        }
+        return false;
+    }
+    
     private static void shutdown() {
         System.out.println("Shutting down server...");
 
