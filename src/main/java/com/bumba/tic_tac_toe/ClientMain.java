@@ -19,7 +19,7 @@ public class ClientMain extends Application {
     public void start(Stage stage) throws IOException {
         instance = this;
 
-        FXMLLoader fxmlLoader = new FXMLLoader(ClientMain.class.getResource("fxml/logInScene.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(ClientMain.class.getResource("/fxml/logInScene.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 600, 400);
         stage.setResizable(false);
         stage.setTitle("Tic Tac Toe");
@@ -62,7 +62,7 @@ public class ClientMain extends Application {
         }
     }
 
-    private void sendRequestToServer( String type, String request) {
+    public void sendRequestToServer( String type, String request) {
         //send request to server with specified type for init of game
     }
 
@@ -85,9 +85,7 @@ public class ClientMain extends Application {
     }
 
     public String[] getGameList() {
-        if (client != null) {
-            return client.getGameList();
-        }
+        return client.getGameList();
     }
 
     private void onMessageReceived(String message) {

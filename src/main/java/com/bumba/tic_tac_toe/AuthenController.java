@@ -1,6 +1,4 @@
-package com.bumba.tic_tac_toe.Controller;
-
-import com.bumba.tic_tac_toe.ClientMain;
+package com.bumba.tic_tac_toe;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

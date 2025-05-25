@@ -1,6 +1,5 @@
-package com.bumba.tic_tac_toe.Controller;
+package com.bumba.tic_tac_toe;
 
-import com.bumba.tic_tac_toe.ClientMain;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;

@@ -1,6 +1,4 @@
-package com.bumba.tic_tac_toe.Controller;
-
-import com.bumba.tic_tac_toe.ClientMain;
+package com.bumba.tic_tac_toe;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -148,7 +146,8 @@ public class GameController {
     public void initialize() {
         //get player name
         if(dimension!=3||dimension!=9) {
-            dimension=client.sendRequestToServer("init","dimension");
+            client.sendRequestToServer("init","dimension");
+            //get dimension from server
         }
         if(dimension == 3){
             board3x3.setVisible(true);
