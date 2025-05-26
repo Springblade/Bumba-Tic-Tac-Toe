@@ -16,6 +16,9 @@ public class ClientMain extends Application {
     private static ClientMain instance;
     private static AuthenController authenController;
     private static LobbyController lobbyController;
+    private static GameController gameController;
+    private static String currentGameId;
+    private static int currentGameDimension = 3;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -42,9 +45,30 @@ public class ClientMain extends Application {
 
         stage.show();
     }
-    // Add this method to be called from AuthenController
+    
     public static void setLobbyController(LobbyController controller) {
         lobbyController = controller;
+    }
+
+    public static void setGameController(GameController controller) {
+        gameController = controller;
+    }
+
+    public static GameController getGameController() {
+        return gameController;
+    }
+
+    public static void setCurrentGameInfo(String gameId, int dimension) {
+        currentGameId = gameId;
+        currentGameDimension = dimension;
+    }
+
+    public static int getCurrentGameDimension() {
+        return currentGameDimension;
+    }
+
+    public static String getCurrentGameId() {
+        return currentGameId;
     }
 
     public static void connect() {
@@ -137,13 +161,22 @@ public class ClientMain extends Application {
 
             case "GAME_CREATED":
                 System.out.println("Game created successfully with ID: " + content);
+                ClientMain.setCurrentGameInfo(content, ClientMain.getCurrentGameDimension());
+                // Immediately transition creator to game scene
                 if (lobbyController != null) {
                     Platform.runLater(() -> lobbyController.transitionToGame());
                 }
                 break;
+
             case "GAME_START":
                 System.out.println("Game starting: " + content);
                 // Transition both players to game scene
+                String[] gameInfo = content.split(":");
+                if (gameInfo.length >= 4) {
+                    String gameId = gameInfo[0];
+                    int dimension = Integer.parseInt(gameInfo[3]);
+                    ClientMain.setCurrentGameInfo(gameId, dimension);
+                }
                 if (lobbyController != null) {
                     Platform.runLater(() -> lobbyController.transitionToGame());
                 }
@@ -154,10 +187,35 @@ public class ClientMain extends Application {
                     Platform.runLater(() -> lobbyController.updateGameListFromServer(content));
                 }
                 break;
-            
+
+            case "GAME_END":
+                System.out.println("Game ended: " + content);
+                // Placeholder for handling game end
+                // Transition back to lobby when game ends
+                // if (gameController != null) {
+                //     Platform.runLater(() -> gameController.handleGameEnd(content));
+                // }
+                break;
+
+            case "LEAVE_SUCCESS":
+                System.out.println("Successfully left game: " + content);
+                // PLaceholder for handling leave success
+                // Return to lobby when manually leaving
+                // if (gameController != null) {
+                //     Platform.runLater(() -> gameController.transitionBackToLobby());
+                // }
+                // break;
+                
             case "SPECTATE_SUCCESS":
                 System.out.println("Successfully joined as spectator: " + content);
-                // Transition to game scene as spectator
+                // Extract game dimension from spectate success message
+                // Format: "Now spectating game gameId dimension"
+                String[] spectateInfo = content.split(" ");
+                if (spectateInfo.length >= 4) {
+                    String gameId = spectateInfo[3];
+                    // Request game info to get dimension
+                    ClientMain.getClient().sendMessage("get_game_info-" + gameId);
+                }
                 if (lobbyController != null) {
                     Platform.runLater(() -> lobbyController.transitionToGame());
                 }
@@ -165,18 +223,14 @@ public class ClientMain extends Application {
                 
             case "SPECTATOR_JOIN":
                 System.out.println("Spectator joined: " + content);
-                // Handle spectator notifications if in game
+                // Placeholder for handling spectator joining
                 break;
                 
             case "SPECTATOR_LEAVE":
                 System.out.println("Spectator left: " + content);
-                // Handle spectator notifications if in game
+                // placeholder for handling spectator leaving
                 break;
                 
-            case "LEAVE_SUCCESS":
-                System.out.println("Successfully left game: " + content);
-                // Return to lobby if in game scene
-                break;
             case "NO_GAMES":
                 System.out.println("No games available on server");
                 if (lobbyController != null) {

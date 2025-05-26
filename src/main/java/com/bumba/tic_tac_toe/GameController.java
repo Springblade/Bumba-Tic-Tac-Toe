@@ -1,10 +1,10 @@
 package com.bumba.tic_tac_toe;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -140,54 +140,91 @@ public class GameController {
     private Image symbolO;
     private int turn;
 
-
-
     @FXML
     public void initialize() {
-        //get player name
-        if(dimension!=3||dimension!=9) {
-            client.sendRequestToServer("init","dimension");
-            //get dimension from server
+        // Register this controller with ClientMain
+        ClientMain.setGameController(this);
+        
+        // Get dimension from ClientMain (set during game creation)
+        this.dimension = ClientMain.getCurrentGameDimension();
+        
+        if (dimension == 0) {
+            System.out.println("Warning: Game dimension not set! Waiting for server information...");
+            // Request dimension from server if not available
+            if (ClientMain.getClient() != null && ClientMain.getCurrentGameId() != null) {
+                ClientMain.getClient().sendMessage("get_game_info-" + ClientMain.getCurrentGameId());
+            }
+            return; // Don't initialize board yet
         }
-        if(dimension == 3){
+        
+        initializeGameBoard();
+    }
+        
+    private void initializeGameBoard() {
+        System.out.println("GameController initializing with dimension: " + dimension);
+        
+        // Initialize the game board based on dimension
+        if (dimension == 3) {
             board3x3.setVisible(true);
             board9x9.setVisible(false);
-            grids = new ArrayList<>(Arrays.asList(grid0,grid1, grid2, grid3, grid4, grid5, grid6, grid7, grid8));
+            grids = new ArrayList<>(Arrays.asList(grid0, grid1, grid2, grid3, grid4, grid5, grid6, grid7, grid8));
         } else if (dimension == 9) {
             board3x3.setVisible(false);
             board9x9.setVisible(true);
-            grids= new ArrayList<>(Arrays.asList(grid00, grid01, grid02, grid03, grid04, grid05, grid06, grid07,
+            grids = new ArrayList<>(Arrays.asList(grid00, grid01, grid02, grid03, grid04, grid05, grid06, grid07,
                     grid08, grid09, grid10, grid11, grid12, grid13, grid14, grid15,
                     grid16, grid17, grid18, grid19, grid20, grid21, grid22, grid23,
                     grid24, grid25, grid26, grid27, grid28, grid29, grid30, grid31,
                     grid32, grid33, grid34, grid35, grid36, grid37, grid38, grid39,
                     grid40, grid41, grid42, grid43, grid44, grid45, grid46, grid47,
-                    grid48, grid49, grid50, grid51, grid52, grid53,grid54 ,grid55,
+                    grid48, grid49, grid50, grid51, grid52, grid53, grid54, grid55,
                     grid56, grid57, grid58, grid59, grid60, grid61, grid62, grid63,
                     grid64, grid65, grid66, grid67, grid68, grid69, grid70, grid71,
                     grid72, grid73, grid74, grid75, grid76, grid77, grid78, grid79,
                     grid80));
         } else {
-            System.out.println("Invalid dimension: " + dimension);
+            System.out.println("Invalid dimension: " + dimension + ", defaulting to 3x3");
+            dimension = 3;
+            board3x3.setVisible(true);
+            board9x9.setVisible(false);
+            grids = new ArrayList<>(Arrays.asList(grid0, grid1, grid2, grid3, grid4, grid5, grid6, grid7, grid8));
         }
 
-        String clickSfx = new File("/src/main/resources/com/bumba/tic_tac_toe/sfx/click.mp3").toURI().toString();
-        Media clickSound = new Media(clickSfx);
-        clickSfxPlayer = new MediaPlayer(clickSound);
+        // Initialize images and sound with proper error handling
+        try {
+            symbolX = new Image(getClass().getResourceAsStream("/com/bumba/tic_tac_toe/img/X.png"));
+            symbolO = new Image(getClass().getResourceAsStream("/com/bumba/tic_tac_toe/img/O.png"));
+            
+            // Initialize sound with proper resource loading
+            String clickSfx = getClass().getResource("/com/bumba/tic_tac_toe/sfx/click.mp3").toExternalForm();
+            Media clickSound = new Media(clickSfx);
+            clickSfxPlayer = new MediaPlayer(clickSound);
+            
+        } catch (Exception e) {
+            System.err.println("Failed to load game resources: " + e.getMessage());
+            // Continue without resources rather than failing
+        }
 
-        Image symbolX = new Image("src/main/resources/com/bumba/tic_tac_toe/img/X.png");
-        Image symbolO = new Image("src/main/resources/com/bumba/tic_tac_toe/img/O.png");
-
-        int turn = 1;
+        turn = 1;
+        
+        System.out.println("Game initialized successfully with " + dimension + "x" + dimension + " board");
     }
 
+    // Method to update dimension when received from server
+    public void setGameDimension(int dimension) {
+        this.dimension = dimension;
+        ClientMain.setCurrentGameInfo(ClientMain.getCurrentGameId(), dimension);
+        Platform.runLater(() -> initializeGameBoard());
+    }
+    
     @FXML
     protected void onClick() {
         clickSfxPlayer.seek(clickSfxPlayer.getStartTime());
         clickSfxPlayer.play();
     }
 
-    private void handleButtonPress(ActionEvent event) {
+    @FXML
+    private void handleGameMove(ActionEvent event) {
         Button clickedButton = (Button) event.getSource();
         onClick();
 
@@ -202,7 +239,7 @@ public class GameController {
             move = row * 9 + col;
             board9x9.setDisable(true);
         }
-        client.sendGameMove(String.valueOf(move));
+        ClientMain.sendGameMove(String.valueOf(move));
         updateBoard(move);
     }
 
@@ -235,6 +272,20 @@ public class GameController {
         }
         turn++;
     }
+
+    // Method called when game ends (from server message)
+    public void handleGameEnd(String gameEndInfo) {
+        Platform.runLater(() -> {
+            System.out.println("Game ended: " + gameEndInfo);
+            
+            // Show game end message for a few seconds, then return to lobby
+            // You can add a dialog or label here to show the result
+            
+            // The game does not go back to lobby screen after ending, but instead have a return button for the player
+            // placehilder for game end message
+        });
+    }
+
 
     @FXML
     private void backToLobbyScene() {

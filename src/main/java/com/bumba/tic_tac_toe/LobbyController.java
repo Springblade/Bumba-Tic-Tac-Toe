@@ -269,8 +269,9 @@ public class LobbyController {
     protected void createGame(int dimension) {
         // Send create game message to server
         // Format: "create_game-username" (dimension would be set when game starts)
-        if(client.getClient() != null) {
-            client.getClient().sendMessage("create_game-" + client.getClient().getUsername() + "-" + dimension);
+        if(ClientMain.getClient() != null) {
+            ClientMain.setCurrentGameInfo("", dimension);
+            ClientMain.getClient().sendMessage("create_game-" + ClientMain.getClient().getUsername() + "-" + dimension);
             System.out.println("Creating " + dimension + "x" + dimension + " game...");
             
             // Hide the dimension selection buttons after creating
@@ -298,8 +299,8 @@ public class LobbyController {
     protected void joinGame(String gameId) {
         // Send join game message to server
         // Format: "join_game-gameId"
-        if(client.getClient() != null && gameId != null) {
-            client.getClient().sendMessage("join_game-" + gameId);
+        if(ClientMain.getClient() != null && gameId != null) {
+            ClientMain.getClient().sendMessage("join_game-" + gameId);
             System.out.println("Joining game: " + gameId);
             
             // Transition to game scene after joining
@@ -322,8 +323,8 @@ public class LobbyController {
     protected void spectate(String gameId) {
         // Send spectate message to server
         // Format: "spectate-gameId"
-        if(client.getClient() != null && gameId != null) {
-            client.getClient().sendMessage("spectate-" + gameId);
+        if(ClientMain.getClient() != null && gameId != null) {
+            ClientMain.getClient().sendMessage("spectate-" + gameId);
             System.out.println("Spectating game: " + gameId);
             
             // Transition to game scene as spectator
@@ -351,14 +352,37 @@ public class LobbyController {
     @FXML
     public void transitionToGame() {
         try {
-            root = FXMLLoader.load(getClass().getResource("/com/bumba/tic_tac_toe/game.fxml"));
-            scene = new Scene(root);
-            stage = (Stage) createGameButton.getScene().getWindow();
-            stage.setScene(scene);
-            stage.setTitle("Tic Tac Toe - Game");
-            stage.show();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/bumba/tic_tac_toe/game.fxml"));
+            root = loader.load();
             
+            // Get the game controller and register it
+            GameController gameController = loader.getController();
+            ClientMain.setGameController(gameController);
+            
+        Scene scene = new Scene(root);
+        
+        // Get the stage from any available control instead of using the field
+        Stage currentStage = null;
+        
+        // Try multiple controls to get the stage
+        if (createGameButton != null && createGameButton.getScene() != null) {
+            currentStage = (Stage) createGameButton.getScene().getWindow();
+        } else if (gameListView != null && gameListView.getScene() != null) {
+            currentStage = (Stage) gameListView.getScene().getWindow();
+        } else if (refreshButton != null && refreshButton.getScene() != null) {
+            currentStage = (Stage) refreshButton.getScene().getWindow();
+        } else if (tabPane != null && tabPane.getScene() != null) {
+            currentStage = (Stage) tabPane.getScene().getWindow();
+        }
+        
+        if (currentStage != null) {
+            currentStage.setScene(scene);
+            currentStage.setTitle("Tic Tac Toe - Game");
+            currentStage.show();
             System.out.println("Transitioned to game scene");
+        } else {
+            System.err.println("Could not find stage to transition to game scene");
+        }
         } catch (IOException e) {
             System.err.println("Failed to transition to game scene: " + e.getMessage());
             e.printStackTrace();
