@@ -95,6 +95,9 @@ public class ClientMain extends Application {
     public String[] getGameList() {
         return client.getGameList();
     }
+    public String[] getRankList() {
+        return client.getRankList();
+    }
 
 
     private void onMessageReceived(String message) {

@@ -209,7 +209,12 @@ public class Client {
     // Request the list of games from the server
     public String[] getGameList() {
         sendMessage("list_games");
-        return new String[0];
+        return new String[0];  // Placeholder for actual game list retrieval logic
+    }
+
+    public String[] getRankList() {
+        sendMessage("rank_list");
+        return new String[0]; // Placeholder for actual rank list retrieval logic
     }
 
     // Connection management

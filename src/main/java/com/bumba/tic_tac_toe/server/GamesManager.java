@@ -112,12 +112,15 @@ public class GamesManager {
     public Map<String, TicTacToe> getGames() {
         return games;
     }
+
     public Map<String, String> getWaitingPlayers() {
         return waitingPlayers;
     }
+
     public Map<String, String> getPlayers() {
         return players;
     }
+
     public Map<String, String> getSpectators() {
         return spectators;
     }

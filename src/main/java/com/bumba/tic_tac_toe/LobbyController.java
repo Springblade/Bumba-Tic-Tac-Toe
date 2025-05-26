@@ -9,10 +9,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
@@ -28,20 +25,34 @@ public class LobbyController {
     @FXML private Button new9x9game;
     @FXML private Label IDLabel;
     @FXML private Label statusLabel;
+    @FXML private TabPane tabPane;
+    @FXML private Tab gameTab;
+    @FXML private Tab rankings;
 
     @FXML private Scene scene;
     @FXML private Parent root;
     @FXML private Stage stage;
 
     private ClientMain client;
+    private int count = 0;
 
     public static class GameEntry {
         String ID, status;
         GameEntry(String ID, String status) { this.ID = ID; this.status = status; }
     }
 
+    public static class RankEntry {
+        int count;
+        String username, elo;
+        RankEntry(int count, String username, String elo) { this.count=count; this.username = username; this.elo = elo; }
+    }
+
     @FXML
     public void initialize() {
+
+        new3x3game.setOnAction(event -> createGame(3));
+        new9x9game.setOnAction(event -> createGame(9));
+
         ObservableList<GameEntry> games = FXCollections.observableArrayList();
         if(client != null && client.getGameList() != null) {
             for (String game : client.getGameList()) {
@@ -51,9 +62,14 @@ public class LobbyController {
             }
         }
 
-        new3x3game.setOnAction(event -> createGame(3));
-        new9x9game.setOnAction(event -> createGame(9));
-
+        ObservableList<RankEntry> ranks = FXCollections.observableArrayList();
+        if(client != null && client.getRankList() != null) {
+            for (String rank : client.getRankList()) {
+                String[] parts = rank.split(",");
+                RankEntry newRank = new RankEntry(count++, parts[0], parts[1]);
+                ranks.add(newRank);
+            }
+        }
 
         gameListView.setItems(games);
         gameListView.setCellFactory(listView -> new ListCell<>() {
@@ -70,9 +86,6 @@ public class LobbyController {
                         IDLabel.setText(newGame.ID);
                         statusLabel.setText(newGame.status);
 
-                        joinGameButton.setOnAction(event -> System.out.println("Connecting to " + newGame.ID));
-                        quickJoinButton.setOnAction(event -> System.out.println("Connecting to " + newGame.ID));
-                        spectateButton.setOnAction(event -> System.out.println("Showing info for " + newGame.ID));
 
 
                         setGraphic(hbox);
@@ -85,16 +98,33 @@ public class LobbyController {
     }
 
     public void refresh() {
-        gameListView.getItems().clear();
-        ObservableList<GameEntry> games = FXCollections.observableArrayList();
-        if(client != null && client.getGameList() != null) {
-            for (String game : client.getGameList()) {
-                String[] parts = game.split(",");
-                GameEntry newGame = new GameEntry(parts[0], parts[1]);
-                games.add(newGame);
+        Tab selectedTab = tabPane.getSelectionModel().getSelectedItem();
+        //if current tab is gameTab, refresh the game list
+        if(selectedTab == gameTab){
+            gameListView.getItems().clear();
+            ObservableList<GameEntry> games = FXCollections.observableArrayList();
+            if(client != null && client.getGameList() != null) {
+                for (String game : client.getGameList()) {
+                    String[] parts = game.split(",");
+                    GameEntry newGame = new GameEntry(parts[0], parts[1]);
+                    games.add(newGame);
+                }
+            }
+            gameListView.setItems(games);
+        }
+
+        //if current tab is rankings, refresh the game list
+        if (selectedTab == rankings) {
+            ObservableList<RankEntry> ranks = FXCollections.observableArrayList();
+            int count = 1;
+            if (client != null && client.getRankList() != null) {
+                for (String rank : client.getRankList()) {
+                    String[] parts = rank.split(",");
+                    RankEntry newRank = new RankEntry(count++, parts[0], parts[1]);
+                    ranks.add(newRank);
+                }
             }
         }
-        gameListView.setItems(games);
     }
 
     @FXML
@@ -122,13 +152,14 @@ public class LobbyController {
         }
     }
 
+    @FXML
     protected void joinGame() {
         // Get selected game from list
         GameEntry selectedGame = gameListView.getSelectionModel().getSelectedItem();
         if(selectedGame != null) {
             joinGame(selectedGame.ID);
         } else {
-            System.out.println("No game selected to join");
+            System.out.println("Error joining game");
         }
     }
     
@@ -145,6 +176,7 @@ public class LobbyController {
         }
     }
 
+    @FXML
     protected void spectate() {
         // Get selected game from list
         GameEntry selectedGame = gameListView.getSelectionModel().getSelectedItem();
@@ -154,7 +186,7 @@ public class LobbyController {
             System.out.println("No game selected to spectate");
         }
     }
-    
+
     // Overloaded method for direct game ID spectating
     protected void spectate(String gameId) {
         // Send spectate message to server
@@ -168,6 +200,7 @@ public class LobbyController {
         }
     }
 
+    @FXML
     protected void quickJoin() {
         // Send quick join message to server
         // Format: "quick_join"
