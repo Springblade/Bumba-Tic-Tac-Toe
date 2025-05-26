@@ -404,6 +404,7 @@ public class clientHandler implements Runnable {
             // Broadcast chat ONLY to players and spectators in the same game
             String chatMsg = "CHAT-" + formattedMessage;
             ServerMain.broadcastToGameSession(currentGameId, chatMsg);
+            sendMessage(chatMsg);
         }    
 
         sendMessage("CHAT_ACK-Message sent");

@@ -316,17 +316,6 @@ public class GameController {
         });
     }
 
-    public void clearChat() {
-        Platform.runLater(() -> {
-            if (chatArea != null) {
-                chatArea.getItems().clear();
-            }
-            if (chatBox != null) {
-                chatBox.clear();
-            }
-        });
-}
-
     private void moveFromServer(int move) {
         //missing processing of server response
 
