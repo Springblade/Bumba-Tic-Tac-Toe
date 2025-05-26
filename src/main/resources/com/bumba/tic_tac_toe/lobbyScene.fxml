@@ -4,8 +4,6 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
 
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bumba.tic_tac_toe.LobbyController">
@@ -29,13 +27,7 @@
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <TableView prefHeight="372.0" prefWidth="486.0">
-                          <columns>
-                            <TableColumn prefWidth="95.20001220703125" text="No." />
-                            <TableColumn prefWidth="144.0" text="Username" />
-                              <TableColumn prefWidth="245.60001220703123" text="Elo" />
-                          </columns>
-                        </TableView>
+                        <ListView fx:id="rankingsListView" prefHeight="371.0" prefWidth="494.0" />
                      </children>
                   </AnchorPane>
             </content>

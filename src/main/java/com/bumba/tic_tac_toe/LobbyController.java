@@ -51,77 +51,87 @@ public class LobbyController {
     }
 
     public static class RankEntry {
-        int count;
+        int rank;
         String username, elo;
-        RankEntry(int count, String username, String elo) { this.count=count; this.username = username; this.elo = elo; }
-        
-        @Override
-        public String toString() {
-            return count + ". " + username + " - " + elo + " ELO";
-        }
+        RankEntry(int rank, String username, String elo) { this.rank=rank; this.username = username; this.elo = elo; }
     }
 
     @FXML
     public void initialize() {
-
         new3x3game.setOnAction(event -> createGame(3));
         new9x9game.setOnAction(event -> createGame(9));
         ClientMain.setLobbyController(this);
 
-
+        // Initialize game list
         ObservableList<GameEntry> games = FXCollections.observableArrayList();
         gameListView.setItems(games);
 
-        // Request initial data from server
+        // Initialize rankings list
+        ObservableList<RankEntry> ranks = FXCollections.observableArrayList();
+        rankingsListView.setItems(ranks);
+
+        // Request initial data from the server
         refreshFromServer();
         requestRankings();
 
-        ObservableList<RankEntry> ranks = FXCollections.observableArrayList();
-        if(client != null && rankList != null) {
-            for (String rank : rankList) {
-                String[] parts = rank.split(",");
-                RankEntry newRank = new RankEntry(count++, parts[0], parts[1]);
-                ranks.add(newRank);
-            }
-        }
-
+        // Set up game list cell factory
         gameListView.setCellFactory(listView -> new ListCell<>() {
-        @Override
-        protected void updateItem(GameEntry gameEntry, boolean empty) {
-            super.updateItem(gameEntry, empty);
-            if (empty || gameEntry == null) {
-                setText(null);
-                setGraphic(null);
-            } else {
-                // Create simple HBox programmatically
-                HBox hbox = new HBox(10);
-                
-                Label idLabel = new Label(gameEntry.ID);
-                idLabel.setPrefWidth(70);
+            @Override
+            protected void updateItem(GameEntry gameEntry, boolean empty) {
+                super.updateItem(gameEntry, empty);
+                if (empty || gameEntry == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    HBox hbox = new HBox(10);
+                    Label idLabel = new Label(gameEntry.ID);
+                    idLabel.setPrefWidth(70);
 
-                Label creatorLabel = new Label(gameEntry.creator);
-                creatorLabel.setPrefWidth(80);
-                
-                Label statusLabel = new Label(gameEntry.status);
-                statusLabel.setPrefWidth(80);
+                    Label creatorLabel = new Label(gameEntry.creator);
+                    creatorLabel.setPrefWidth(80);
 
-                Label typeLabel =new Label("3x3");
-                if (gameEntry.dimension.equals("9")) {
-                    typeLabel.setText("9x9");
+                    Label statusLabel = new Label(gameEntry.status);
+                    statusLabel.setPrefWidth(80);
+
+                    Label typeLabel = new Label(gameEntry.dimension.equals("9") ? "9x9" : "3x3");
+                    typeLabel.setPrefWidth(20);
+
+                    Button joinButton = new Button("Join");
+                    joinButton.setOnAction(event -> joinGame(gameEntry.ID));
+
+                    Button spectateButton = new Button("Spectate");
+                    spectateButton.setOnAction(event -> spectate(gameEntry.ID));
+
+                    hbox.getChildren().addAll(idLabel, creatorLabel, statusLabel, typeLabel, joinButton, spectateButton);
+                    setGraphic(hbox);
                 }
-                typeLabel.setPrefWidth(20);
-                
-                Button joinButton = new Button("Join");
-                joinButton.setOnAction(event -> joinGame(gameEntry.ID));
-                
-                Button spectateButton = new Button("Spectate");
-                spectateButton.setOnAction(event -> spectate(gameEntry.ID));
-                
-                hbox.getChildren().addAll(idLabel, creatorLabel, statusLabel, typeLabel, joinButton, spectateButton);
-                setGraphic(hbox);
             }
-        }
-    });
+        });
+
+        // Set up rankings list cell factory
+        rankingsListView.setCellFactory(listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(RankEntry rankEntry, boolean empty) {
+                super.updateItem(rankEntry, empty);
+                if (empty || rankEntry == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    HBox hbox = new HBox(10);
+                    Label rankLabel = new Label(String.valueOf(rankEntry.rank));
+                    rankLabel.setPrefWidth(70);
+
+                    Label nameLabel = new Label(rankEntry.username);
+                    nameLabel.setPrefWidth(80);
+
+                    Label eloLabel = new Label(rankEntry.elo);
+                    eloLabel.setPrefWidth(80);
+
+                    hbox.getChildren().addAll(rankLabel, nameLabel, eloLabel);
+                    setGraphic(hbox);
+                }
+            }
+        });
     }
 
     public void refresh() {
@@ -167,27 +177,27 @@ public class LobbyController {
         Platform.runLater(() -> {
             if (rankingsListView != null) {
                 rankingsListView.getItems().clear();
-                
+
                 if (!rankingsContent.isEmpty()) {
-                    // Parse: "username1,elo1-username2,elo2-username3,elo3"
-                    String[] rankings = rankingsContent.split("-");
-                    
-                    for (int i = 0; i < rankings.length; i++) {
-                        String rankingInfo = rankings[i];
+                    // Parse: "username1_elo1-username2_elo2-username3_elo3"
+                    String[] rankingsArray = rankingsContent.split("-");
+
+                    for (int i = 0; i < rankingsArray.length; i++) {
+                        String rankingInfo = rankingsArray[i];
                         if (!rankingInfo.trim().isEmpty()) {
-                            String[] parts = rankingInfo.split(",");
+                            String[] parts = rankingInfo.split("_");
                             if (parts.length >= 2) {
                                 String username = parts[0];
-                                int elo = Integer.parseInt(parts[1]);
+                                String elo = parts[1];
                                 int rank = i + 1;
-                                
-                                RankEntry newRanking = new RankEntry(rank, username, String.valueOf(elo));
+
+                                RankEntry newRanking = new RankEntry(rank, username, elo);
                                 rankingsListView.getItems().add(newRanking);
                             }
                         }
                     }
                 }
-                
+
                 System.out.println("Updated rankings with " + rankingsListView.getItems().size() + " entries");
             }
         });
