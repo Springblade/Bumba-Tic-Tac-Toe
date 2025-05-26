@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Collection;
 import java.util.List;
 
 import com.bumba.tic_tac_toe.ServerMain;
 import com.bumba.tic_tac_toe.database.Create;
 import com.bumba.tic_tac_toe.database.EloMod;
 import com.bumba.tic_tac_toe.database.LogIn;
+import com.bumba.tic_tac_toe.database.Rank;
 import com.bumba.tic_tac_toe.game.TicTacToe;
 
 public class clientHandler implements Runnable {
@@ -63,6 +65,12 @@ public class clientHandler implements Runnable {
                 case "create_game":
                     handleCreateGame(parts);
                     break;
+                case "list_games":
+                    handleListGames();
+                    break;
+                case "get_rankings":
+                    handleGetRankings();
+                    break;
                 case "quick_join":
                     handleQuickJoin(parts);
                     break;
@@ -96,6 +104,48 @@ public class clientHandler implements Runnable {
             System.err.println("Error processing message from " + getClientId() + ": " + e.getMessage());
         }
     }
+
+    private void handleListGames() {
+        if (!isAuthenticated) {
+            sendMessage("ERROR-Not authenticated");
+            return;
+        }
+        
+        Collection<TicTacToe> allGames = ServerMain.getGamesManager().getAllGames();
+        if (allGames.isEmpty()) {
+            sendMessage("NO_GAMES");
+        } else {
+            StringBuilder sb = new StringBuilder("GAMES_LIST");
+            for (TicTacToe game : allGames) {
+                // Format: gameId:creator:status
+                String creator = game.getPlayer1();
+                String status = game.getPlayer2() == null ? "WAITING" : "IN_PROGRESS";
+                sb.append("-").append(game.getGameId()).
+                    append(":").append(creator).
+                    append(":").append(status).
+                    append(":").append(String.valueOf(game.getDimension()));
+            }
+            sendMessage(sb.toString());
+        }
+    }
+
+    private void handleGetRankings() {
+        if (!isAuthenticated) {
+            sendMessage("ERROR-Not authenticated");
+            return;
+        }
+        
+        List<String> rankings = Rank.Ranking();
+        if (rankings.isEmpty()) {
+            sendMessage("NO_RANKINGS");
+        } else {
+            StringBuilder sb = new StringBuilder("RANKINGS_LIST");
+            for (String ranking : rankings) {
+                sb.append("-").append(ranking);
+            }
+            sendMessage(sb.toString());
+        }
+    }    
 
     private void handleLogin(String[] parts) {
         if (parts.length < 3) {
@@ -143,6 +193,7 @@ public class clientHandler implements Runnable {
         }
 
         TicTacToe game = ServerMain.getGamesManager().newGame(clientUsername);
+        game.setDimension(Integer.parseInt(parts[2])); 
         this.currentGameId = game.getGameId();
         this.isSpectator = false;
 

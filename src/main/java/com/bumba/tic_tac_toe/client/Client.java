@@ -111,12 +111,10 @@ public class Client {
                 // Don't store locally - just pass to ClientMain
                 onMessageReceived.accept(message);
                 break;
-            case "GAME_AVAILABLE":
-                // Pass real-time updates to ClientMain
+            case "RANKINGS_LIST":
                 onMessageReceived.accept(message);
                 break;
-            case "GAME_REMOVED":
-                // Pass real-time updates to ClientMain
+            case "NO_RANKINGS":
                 onMessageReceived.accept(message);
                 break;
             default:
@@ -205,16 +203,25 @@ public class Client {
             sendMessage(chatMessage);
         }
     }
-
-    // Request the list of games from the server
-    public String[] getGameList() {
-        sendMessage("list_games");
-        return new String[0];  // Placeholder for actual game list retrieval logic
+    // Additional game management methods
+    public void createGame(String username, int dimension) {
+        sendMessage("create_game-" + username + "-" + dimension);
     }
 
-    public String[] getRankList() {
-        sendMessage("rank_list");
-        return new String[0]; // Placeholder for actual rank list retrieval logic
+    public void joinGame(String gameId) {
+        sendMessage("join_game-" + gameId);
+    }
+
+    public void quickJoin(String username) {
+        sendMessage("quick_join-" + username);
+    }
+
+    public void spectateGame(String gameId) {
+        sendMessage("spectate-" + gameId);
+    }
+
+    public void leaveGame() {
+        sendMessage("leave_game");
     }
 
     // Connection management
@@ -259,7 +266,18 @@ public class Client {
 //    public String[][] getBoard() {
 //        return board;
 //    }
+    public void getGameList() {
+        sendMessage("list_games");        
+    }
 
+    public void getRankList() {
+        sendMessage("get_rankings");
+    }
+
+    // Add method to request rankings
+    public void requestRankings() {
+        sendMessage("get_rankings");
+    }
 
     public String getUsername() {
         return username;

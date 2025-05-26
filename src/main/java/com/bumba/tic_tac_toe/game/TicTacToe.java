@@ -18,7 +18,7 @@ public class TicTacToe {
     public String[][] board;
 
     public TicTacToe(String player1, String player2) {
-        this.gameId = UUID.randomUUID().toString();
+        this.gameId = UUID.randomUUID().toString().replace("-", "");
         this.player1 = player1;
         this.player2 = player2;
         this.turn = player1;
@@ -129,6 +129,10 @@ public class TicTacToe {
 
     public void setDimension(int dimension) {
         this.dimension = dimension;
+    }
+
+    public int getDimension() {
+        return dimension;
     }
 
     public GameState getGameState() {

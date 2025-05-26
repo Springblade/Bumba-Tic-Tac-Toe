@@ -74,6 +74,12 @@ public class ClientMain extends Application {
         //send request to server with specified type for init of game
     }
 
+    public static void requestRankings() {
+        if (client != null) {
+            client.requestRankings();
+        }
+    }
+
     public static void sendGameMove(String moveIndex) {
         if (client != null) {
             client.sendGameMove(moveIndex);
@@ -92,11 +98,11 @@ public class ClientMain extends Application {
         }
     }
 
-    public String[] getGameList() {
-        return client.getGameList();
+    public void getGameList() {
+        client.getGameList();
     }
-    public String[] getRankList() {
-        return client.getRankList();
+    public void getRankList() {
+        client.getRankList();
     }
 
 
@@ -120,25 +126,87 @@ public class ClientMain extends Application {
                 Platform.runLater(() -> authenController.transitionToLobbyScene());
                 break;
             case "LOGIN_FAILED":
-                System.err.println("Login failed: " + content);
+                authenController.handleError(content);
                 break;
             case "REGISTER_SUCCESS":
                 System.out.println("Registration successful: " + content);
                 break;
             case "REGISTER_FAILED":
-                System.err.println("Registration failed: " + content);
+                authenController.handleError(content);
                 break;
 
             case "GAME_CREATED":
                 System.out.println("Game created successfully with ID: " + content);
-                // The player is now waiting for an opponent to join
-                // The game is visible in the lobby for other players to join
-                break;    
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.transitionToGame());
+                }
+                break;
+            case "GAME_START":
+                System.out.println("Game starting: " + content);
+                // Transition both players to game scene
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.transitionToGame());
+                }
+                break;
+            case "GAMES_LIST":
+                System.out.println("Received game list from server: " + content);
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.updateGameListFromServer(content));
+                }
+                break;
+            
+            case "SPECTATE_SUCCESS":
+                System.out.println("Successfully joined as spectator: " + content);
+                // Transition to game scene as spectator
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.transitionToGame());
+                }
+                break;
+                
+            case "SPECTATOR_JOIN":
+                System.out.println("Spectator joined: " + content);
+                // Handle spectator notifications if in game
+                break;
+                
+            case "SPECTATOR_LEAVE":
+                System.out.println("Spectator left: " + content);
+                // Handle spectator notifications if in game
+                break;
+                
+            case "LEAVE_SUCCESS":
+                System.out.println("Successfully left game: " + content);
+                // Return to lobby if in game scene
+                break;
+            case "NO_GAMES":
+                System.out.println("No games available on server");
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.clearGameList());
+                }
+                break;
+            case "RANKINGS_LIST":
+                System.out.println("Received rankings from server: " + content);
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.updateRankingsFromServer(content));
+                }
+                break;
+            case "NO_RANKINGS":
+                System.out.println("No rankings available on server");
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.clearRankings());
+                }
+                break;
             case "GAME_AVAILABLE":
                 System.out.println("New game available in lobby: " + content);
-                // Refresh lobby game list if currently in lobby
-                Platform.runLater(() -> lobbyController.refresh());
-                break;                        
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.addGameToLobby(content));
+                }
+                break;
+            case "GAME_REMOVED":
+                System.out.println("Game removed from lobby: " + content);
+                if (lobbyController != null) {
+                    Platform.runLater(() -> lobbyController.removeGameFromLobby(content));
+                }
+                break;
             case "CHAT":
                 System.out.println("Chat message: " + content);
                 break;

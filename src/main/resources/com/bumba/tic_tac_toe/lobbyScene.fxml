@@ -42,5 +42,6 @@
           </Tab>
         </tabs>
       </TabPane>
+      <Button fx:id="refreshButton" layoutX="517.0" layoutY="14.0" mnemonicParsing="false" onAction="#refreshFromServer" text="Refresh" />
    </children>
 </AnchorPane>
