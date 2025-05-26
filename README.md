@@ -41,4 +41,3 @@ TicTacToeGame/
 │
 └── resources/                      # External data files
     └── db.txt                      # Simulated user database (username:password)
-
