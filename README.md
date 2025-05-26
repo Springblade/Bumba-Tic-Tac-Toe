@@ -11,33 +11,55 @@ The system is built using a **client-server architecture**, with each client run
 ## 🎯 Features
 
 - ✅ Real-time multiplayer Tic-Tac-Toe (3x3 grid)
-- ✅ GUI-based client interface (JavaFX/Swing)
+- ✅ Board Expansion (9x9 grid)
+- ✅ GUI-based client interface (JavaFX)
 - ✅ Server supports multiple simultaneous clients and matches
 - ✅ User login system with username and password authentication
-- ✅ 🔸 In-game chat between two players in a match 
-- ⚡ Bonus-ready: support for larger boards, game rankings, emojis, etc.
+- ✅ In-game chat between players and spectators in a match
+- ✅ Ranking management system
+- ✅ Spectator support
+- ✅ Server has a database which store the information of users
+- ✅ Has match browsing system
 
 ---
 
 ## 🗂️ Project Structure
 
 ```plaintext
-TicTacToeGame/
-├── client/                         # Client-side logic and interface
-│   ├── Client.java                 # Connects to server, sends/receives data
-│   ├── ClientListener.java         # Listens to server responses (moves/chat)
-│   ├── GameWindow.java             # Main GUI frame (board + chat)
-│   ├── GamePanel.java              # Draws and handles the Tic-Tac-Toe board
-│   └── ChatPanel.java              # 🔸 Chat UI: input field, display area, send button
-│
-├── server/                         # Server-side logic
-│   ├── Server.java                 # Initializes server and handles client connections
-│   ├── ClientHandler.java          # Communicates with individual clients
-│   ├── GameRoom.java               # Manages a match between two players
-│   └── UserDatabase.java           # Simple file-based login validation
-│
-├── common/                         # Shared constants and protocol formats
-│   └── MessageProtocol.java        # Defines standardized message tags like CHAT:, MOVE:
-│
+java/
+├── tic_tac_toe/                         # Client-side logic and interface
+│    ├── client/                         # Client-side logic and interface
+│    │   ├── Client.java                 # Connects to server, sends/receives data
+│    │
+│    ├── server/                         # Server-side logic
+│    │   ├── ClientHandler.java          # Communicates with individual clients
+│    │   └── GamesManager.java           # Manage each game session
+│    │ 
+│    ├── enumeration/                    # Some miscellaneous for the logic
+│    │   └── GameState.java              # State for indicating game turn/state
+│    │
+│    │
+│    ├── game/                           # Game logic residing in the server
+│    │   ├── TicTacToe.java              # Core logic
+│    │   ├── TicTacToe3x3.java           # Extened logic for 3x3 board
+│    │   └── TicTacToe9x9.java           # Extended logic for 9x9 board
+│    │
+│    ├── database/                       # The database module in the server
+│    │   ├── Connect.java                # Connect to the DB server
+│    │   ├── Create.java                 # Registration for new user
+│    │   ├── EloMod.java                 # Elo modification after finish a game
+│    │   ├── LogIn.java                  # User authentication
+│    │   └── Rank.java                   # Global ranking of all users
+│    │
+│    ├── AuthenController.java           # GUI controller for the authentication scene
+│    ├── LobbyController.java            # GUI controller for the the lobby
+│    ├── GameController.java             # GUI controller for the tic-tac-toe (the main game)
+│    │
+│    ├── ClientMain.java                 # Main execution for client  
+│    └── ServerMain.java                 # Main execution for server
+│    
 └── resources/                      # External data files
-    └── db.txt                      # Simulated user database (username:password)
+     ├── fxml files                  # Format for the GUI
+     ├── img                         # Images
+     ├── css                         # Some styling with fxml
+     └── sfx                         # Simple sound effects
