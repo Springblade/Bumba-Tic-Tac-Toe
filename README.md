@@ -26,32 +26,40 @@ The system is built using a **client-server architecture**, with each client run
 ## 🗂️ Project Structure
 
 ```plaintext
-tic_tac_toe/
-├── client/                         # Client-side logic and interface
-│   ├── Client.java                 # Connects to server, sends/receives data
-│
-├── server/                         # Server-side logic
-│   ├── ClientHandler.java          # Communicates with individual clients
-│   └── GamesManager.java           # Manage each game session
-│ 
-├── enumeration/                    # Some miscellaneous for the logic
-│   └── GameState.java              # State for indicating game turn/state
-│
-│
-├── game/                           # Game logic residing in the server
-│   ├── TicTacToe.java              # Core logic
-│   ├── TicTacToe3x3.java           # Extened logic for 3x3 board
-│   └── TicTacToe9x9.java           # Extended logic for 9x9 board
-│
-├── database/                       # The database module in the server
-│   ├── Connect.java                # Connect to the DB server
-│   ├── Create.java                 # Registration for new user
-│   ├── EloMod.java                 # Elo modification after finish a game
-│   ├── LogIn.java                  # User authentication
-│   └── Rank.java                   # Global ranking of all users
-│
+java/
+├── tic_tac_toe/                         # Client-side logic and interface
+│    ├── client/                         # Client-side logic and interface
+│    │   ├── Client.java                 # Connects to server, sends/receives data
+│    │
+│    ├── server/                         # Server-side logic
+│    │   ├── ClientHandler.java          # Communicates with individual clients
+│    │   └── GamesManager.java           # Manage each game session
+│    │ 
+│    ├── enumeration/                    # Some miscellaneous for the logic
+│    │   └── GameState.java              # State for indicating game turn/state
+│    │
+│    │
+│    ├── game/                           # Game logic residing in the server
+│    │   ├── TicTacToe.java              # Core logic
+│    │   ├── TicTacToe3x3.java           # Extened logic for 3x3 board
+│    │   └── TicTacToe9x9.java           # Extended logic for 9x9 board
+│    │
+│    ├── database/                       # The database module in the server
+│    │   ├── Connect.java                # Connect to the DB server
+│    │   ├── Create.java                 # Registration for new user
+│    │   ├── EloMod.java                 # Elo modification after finish a game
+│    │   ├── LogIn.java                  # User authentication
+│    │   └── Rank.java                   # Global ranking of all users
+│    │
+│    ├── AuthenController.java           # GUI controller for the authentication scene
+│    ├── LobbyController.java            # GUI controller for the the lobby
+│    ├── GameController.java             # GUI controller for the tic-tac-toe (the main game)
+│    │
+│    ├── ClientMain.java                 # Main execution for client  
+│    └── ServerMain.java                 # Main execution for server
+│    
 └── resources/                      # External data files
-    ├── fxml files                  # Format for the GUI
-    ├── img                         # Images
-    ├── css                         # Some styling with fxml
-    └── sfx                         # Simple sound effects
+     ├── fxml files                  # Format for the GUI
+     ├── img                         # Images
+     ├── css                         # Some styling with fxml
+     └── sfx                         # Simple sound effects
