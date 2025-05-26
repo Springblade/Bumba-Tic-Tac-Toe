@@ -16,6 +16,8 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -30,7 +32,7 @@ public class GameController {
     @FXML private Label playername2;
     @FXML private Label elo1;
     @FXML private Label elo2;
-    @FXML private ListView<?> chatArea;
+    @FXML private ListView<String> chatArea;
     @FXML private TextField chatBox;
 
     @FXML private ImageView grid0;
@@ -144,7 +146,7 @@ public class GameController {
     public void initialize() {
         // Register this controller with ClientMain
         ClientMain.setGameController(this);
-        
+        initializeChat();
         // Get dimension from ClientMain (set during game creation)
         this.dimension = ClientMain.getCurrentGameDimension();
         
@@ -158,6 +160,26 @@ public class GameController {
         }
         initializePlayerInfo();
         initializeGameBoard();
+        
+    }
+
+    private void initializeChat() {
+        if (chatArea != null) {
+            chatArea.getItems().clear();
+            // Add welcome message
+            chatArea.getItems().add("=== Game Chat ===");
+            chatArea.getItems().add("You can chat with other players here");
+        }
+        
+        if (chatBox != null) {
+            chatBox.setOnKeyPressed(this::handleChatKeyPressed);
+            chatBox.setPromptText("Type your message...");
+        }
+        
+        if (sendButton != null) {
+            sendButton.setOnAction(event -> sendChatMessage());
+            sendButton.setText("Send");
+        }
     }
 
     private void initializePlayerInfo() {
@@ -267,6 +289,43 @@ public class GameController {
         ClientMain.sendGameMove(String.valueOf(move));
         updateBoard(move);
     }
+
+    @FXML
+    private void sendChatMessage() {
+        String message = chatBox.getText().trim();
+        if (!message.isEmpty()) {
+            ClientMain.sendChatMessage(message);
+            chatBox.clear();
+        }
+    }
+
+    @FXML
+    private void handleChatKeyPressed(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER) {
+            sendChatMessage();
+        }
+    }
+
+    public void addChatMessage(String message) {
+        Platform.runLater(() -> {
+            if (chatArea != null) {
+                chatArea.getItems().add(message);
+                // Auto-scroll to bottom
+                chatArea.scrollTo(chatArea.getItems().size() - 1);
+            }
+        });
+    }
+
+    public void clearChat() {
+        Platform.runLater(() -> {
+            if (chatArea != null) {
+                chatArea.getItems().clear();
+            }
+            if (chatBox != null) {
+                chatBox.clear();
+            }
+        });
+}
 
     private void moveFromServer(int move) {
         //missing processing of server response

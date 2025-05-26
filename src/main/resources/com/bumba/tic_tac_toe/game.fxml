@@ -593,8 +593,8 @@
                      <children>
                         <HBox layoutY="209.0" prefHeight="26.0" prefWidth="166.0">
                            <children>
-                              <TextField fx:id="chatBox" prefHeight="26.0" prefWidth="133.0" />
-                              <Button fx:id="sendButton" mnemonicParsing="false" prefHeight="26.0" prefWidth="22.0" />
+                              <TextField fx:id="chatBox" onAction="#sendChatMessage" onKeyPressed="#handleChatKeyPressed" prefHeight="26.0" prefWidth="133.0" />
+                              <Button fx:id="sendButton" mnemonicParsing="false" onAction="#sendChatMessage" prefHeight="26.0" prefWidth="22.0" />
                            </children>
                         </HBox>
                         <ListView fx:id="chatArea" prefHeight="209.0" prefWidth="158.0" />

@@ -172,7 +172,8 @@ public class Client {
             System.err.println("Username not set");
             return null;
         }
-        return preprocessMessage("chat", username + ":" + content);
+        // return preprocessMessage("chat", username + ":" + content);
+        return preprocessMessage("chat", content);
     }
 
     // Helper method to preprocess outgoing messages

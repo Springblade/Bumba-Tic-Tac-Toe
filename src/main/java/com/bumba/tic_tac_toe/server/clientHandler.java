@@ -5,8 +5,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.bumba.tic_tac_toe.ServerMain;
 import com.bumba.tic_tac_toe.database.Create;
@@ -24,6 +29,8 @@ public class clientHandler implements Runnable {
     private boolean isAuthenticated = false;
     private String currentGameId = null;
     private boolean isSpectator = false;
+
+    private static Map<String, List<String>> gameChatLogs = new ConcurrentHashMap<>();
 
     public clientHandler(Socket socket, List<clientHandler> clients) throws IOException {
         this.clientSocket = socket;
@@ -301,6 +308,16 @@ public class clientHandler implements Runnable {
         }
     }
 
+    // Add method to send chat history when player joins game
+    private void sendChatHistory(String gameId) {
+        List<String> chatHistory = gameChatLogs.get(gameId);
+        if (chatHistory != null && !chatHistory.isEmpty()) {
+            for (String message : chatHistory) {
+                sendMessage("CHAT-" + message);
+            }
+        }
+    }
+
     private void handleGameMove(String[] parts) {
         if (!isAuthenticated) {
             sendMessage("ERROR-Not authenticated");
@@ -371,15 +388,23 @@ public class clientHandler implements Runnable {
         }
 
         String chatContent = parts[1];
-        String chatMsg = "CHAT-" + clientUsername + ": " + chatContent;
 
-        if (currentGameId != null) {
-            // Broadcast chat ONLY to players and spectators in the same game
-            ServerMain.broadcastToGameSession(currentGameId, chatMsg);
-        } else {
-            // Broadcast to lobby if not in a game
-            ServerMain.broadcastToAll(chatMsg, this);
+        // Remove any username prefix if it exists (from old format)
+        if (chatContent.contains(":") && chatContent.startsWith(clientUsername + ":")) {
+            chatContent = chatContent.substring(clientUsername.length() + 1);
         }
+
+        String timestamp = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+        String formattedMessage = "[" + timestamp + "] " + clientUsername + ": " + chatContent;
+        
+        if (currentGameId != null) {
+            // Store chat message in game log
+            gameChatLogs.computeIfAbsent(currentGameId, k -> new ArrayList<>()).add(formattedMessage);
+            
+            // Broadcast chat ONLY to players and spectators in the same game
+            String chatMsg = "CHAT-" + formattedMessage;
+            ServerMain.broadcastToGameSession(currentGameId, chatMsg);
+        }    
 
         sendMessage("CHAT_ACK-Message sent");
     }
@@ -434,6 +459,9 @@ public class clientHandler implements Runnable {
         
         // Send to both players only
         ServerMain.broadcastToGamePlayers(game.getGameId(), gameStartMsg);
+
+        // Send chat history to both players
+        sendChatHistory(game.getGameId());
         
         // Remove game from lobby
         String gameRemovedMsg = "GAME_REMOVED-" + game.getGameId();
@@ -455,6 +483,9 @@ public class clientHandler implements Runnable {
             EloMod.eloUpdate(winner, "win");
             EloMod.eloUpdate(loser, "lose");
         }
+
+        gameChatLogs.remove(game.getGameId());
+        System.out.println("Chat log cleared for game: " + game.getGameId());
 
         // Remove game
         ServerMain.getGamesManager().removeGame(game.getGameId());

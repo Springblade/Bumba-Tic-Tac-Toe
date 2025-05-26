@@ -120,9 +120,12 @@ public class ClientMain extends Application {
         }
     }
 
-    public static void sendChatMessage(String content) {
+    public static void sendChatMessage(String message) {
         if (client != null) {
-            client.sendChatMessage(content);
+            client.sendMessage("chat-" + message);
+            System.out.println("Sending chat message: " + message);
+        } else {
+            System.err.println("Client not connected - cannot send chat message");
         }
     }
 
@@ -354,7 +357,29 @@ public class ClientMain extends Application {
                 break;
             case "CHAT":
                 System.out.println("Chat message: " + content);
+                if (gameController != null) {
+                    Platform.runLater(() -> gameController.addChatMessage(content));
+                }
                 break;
+
+            case "CHAT_HISTORY":
+                System.out.println("Received chat history: " + content);
+                if (gameController != null) {
+                    String[] messages = content.split("-");
+                    Platform.runLater(() -> {
+                        for (String chatMessage : messages) {
+                            if (!chatMessage.isEmpty()) {
+                                gameController.addChatMessage(chatMessage);
+                            }
+                        }
+                    });
+                }
+                break;
+
+            case "CHAT_ACK":
+                System.out.println("Chat message sent successfully");
+                break;
+                
             case "GAME_MOVE":
                 System.out.println("Game move: " + content);
 
