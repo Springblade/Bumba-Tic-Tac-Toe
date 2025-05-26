@@ -188,6 +188,14 @@ public class Client {
         }
     }
 
+    public void requestGamePlayers(String gameId) {
+        sendMessage("get_game_players-" + gameId);
+    }
+
+    public void requestPlayerInfo(String username) {
+        sendMessage("get_player_info-" + username);
+    }
+
     // Send join game request
     public void sendJoinGame(String gameID) {
         String joinMessage = processJoinMsg("join", gameID);

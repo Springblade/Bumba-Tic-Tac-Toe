@@ -19,6 +19,10 @@ public class ClientMain extends Application {
     private static GameController gameController;
     private static String currentGameId;
     private static int currentGameDimension = 3;
+    private static String currentPlayer1;
+    private static String currentPlayer2;
+    private static int currentPlayer1Elo;
+    private static int currentPlayer2Elo;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -129,6 +133,60 @@ public class ClientMain extends Application {
         client.getRankList();
     }
 
+    public static void setCurrentGamePlayers(String player1, String player2, int player1Elo, int player2Elo) {
+        currentPlayer1 = player1;
+        currentPlayer2 = player2;
+        currentPlayer1Elo = player1Elo;
+        currentPlayer2Elo = player2Elo;
+        
+        System.out.println("Game players set:");
+        System.out.println("Player 1: " + player1 + " (ELO: " + player1Elo + ")");
+        System.out.println("Player 2: " + player2 + " (ELO: " + player2Elo + ")");
+    }
+
+    public static String getCurrentPlayer1() {
+        return currentPlayer1;
+    }
+
+    public static String getCurrentPlayer2() {
+        return currentPlayer2;
+    }
+
+    public static int getCurrentPlayer1Elo() {
+        return currentPlayer1Elo;
+    }
+
+    public static int getCurrentPlayer2Elo() {
+        return currentPlayer2Elo;
+    }
+    
+    // Method to request player info from server
+    public static void requestPlayerInfo(String username) {
+        if (client != null) {
+            client.sendMessage("get_player_info-" + username);
+        }
+    }
+
+    // Method to determine current player's role
+    public static boolean isPlayer1() {
+        return client != null && currentPlayer1 != null && 
+            currentPlayer1.equals(client.getUsername());
+    }
+
+    public static String getCurrentPlayerSymbol() {
+        return isPlayer1() ? "X" : "O";
+    }
+
+    public static String getOpponentName() {
+        if (client == null) return null;
+        String username = client.getUsername();
+        if (username.equals(currentPlayer1)) {
+            return currentPlayer2;
+        } else if (username.equals(currentPlayer2)) {
+            return currentPlayer1;
+        }
+        return null;
+    }
 
     private void onMessageReceived(String message) {
         System.out.println("Message received in ClientMain: " + message);
@@ -162,6 +220,11 @@ public class ClientMain extends Application {
             case "GAME_CREATED":
                 System.out.println("Game created successfully with ID: " + content);
                 ClientMain.setCurrentGameInfo(content, ClientMain.getCurrentGameDimension());
+                // Request creator's player info when game is created
+                if (client != null) {
+                    ClientMain.requestPlayerInfo(client.getUsername());
+                }
+                
                 // Immediately transition creator to game scene
                 if (lobbyController != null) {
                     Platform.runLater(() -> lobbyController.transitionToGame());
@@ -170,17 +233,45 @@ public class ClientMain extends Application {
 
             case "GAME_START":
                 System.out.println("Game starting: " + content);
-                // Transition both players to game scene
                 String[] gameInfo = content.split(":");
-                if (gameInfo.length >= 4) {
+                if (gameInfo.length >= 6) {
                     String gameId = gameInfo[0];
+                    String player1 = gameInfo[1];
+                    String player2 = gameInfo[2];
                     int dimension = Integer.parseInt(gameInfo[3]);
+                    int player1Elo = Integer.parseInt(gameInfo[4]);
+                    int player2Elo = Integer.parseInt(gameInfo[5]);
+                    
+                    // Store all game and player info
                     ClientMain.setCurrentGameInfo(gameId, dimension);
+                    ClientMain.setCurrentGamePlayers(player1, player2, player1Elo, player2Elo);
                 }
                 if (lobbyController != null) {
                     Platform.runLater(() -> lobbyController.transitionToGame());
                 }
                 break;
+
+            case "PLAYER_INFO":
+                System.out.println("Received player info: " + content);
+                // Format: "username:elo"
+                String[] playerInfo = content.split(":");
+                if (playerInfo.length >= 2) {
+                    String username = playerInfo[0];
+                    int elo = Integer.parseInt(playerInfo[1]);
+                    
+                    // Store the creator's info when game is created
+                    if (client != null && username.equals(client.getUsername())) {
+                        // This is the creator's info
+                        ClientMain.setCurrentGamePlayers(username, null, elo, 0);
+                    }
+                    
+                    // // Update game controller if it exists
+                    // if (gameController != null) {
+                    //     gameController.updatePlayerInfo(username, elo);
+                    // }
+                }
+                break;
+                
             case "GAMES_LIST":
                 System.out.println("Received game list from server: " + content);
                 if (lobbyController != null) {

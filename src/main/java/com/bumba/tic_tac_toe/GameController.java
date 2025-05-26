@@ -156,8 +156,33 @@ public class GameController {
             }
             return; // Don't initialize board yet
         }
-        
+        initializePlayerInfo();
         initializeGameBoard();
+    }
+
+    private void initializePlayerInfo() {
+        String player1 = ClientMain.getCurrentPlayer1();
+        String player2 = ClientMain.getCurrentPlayer2();
+        int player1Elo = ClientMain.getCurrentPlayer1Elo();
+        int player2Elo = ClientMain.getCurrentPlayer2Elo();
+        
+        // Determine current player's symbol and info
+        if (ClientMain.getClient() != null) {
+            String currentUsername = ClientMain.getClient().getUsername();
+            if (currentUsername.equals(player1)) {
+                this.symbol = "X";
+                System.out.println("You are Player 1 (X) - ELO: " + player1Elo);
+                if (player2 != null) {
+                    System.out.println("Opponent: " + player2 + " (O) - ELO: " + player2Elo);
+                } else {
+                    System.out.println("Waiting for opponent...");
+                }
+            } else if (currentUsername.equals(player2)) {
+                this.symbol = "O";
+                System.out.println("You are Player 2 (O) - ELO: " + player2Elo);
+                System.out.println("Opponent: " + player1 + " (X) - ELO: " + player1Elo);
+            }
+        }
     }
         
     private void initializeGameBoard() {

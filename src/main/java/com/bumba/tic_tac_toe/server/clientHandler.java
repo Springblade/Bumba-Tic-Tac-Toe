@@ -77,6 +77,9 @@ public class clientHandler implements Runnable {
                 case "join_game":
                     handleJoinGame(parts);
                     break;
+                case "get_player_info":
+                    handleGetPlayerInfo(parts);
+                    break;
                 case "spectate":
                     handleSpectate(parts);
                     break;
@@ -127,6 +130,27 @@ public class clientHandler implements Runnable {
             }
             sendMessage(sb.toString());
         }
+    }
+
+    private void handleGetPlayerInfo(String[] parts) {
+        if (!isAuthenticated) {
+            sendMessage("ERROR-Not authenticated");
+            return;
+        }
+
+        if (parts.length < 2) {
+            sendMessage("ERROR-Invalid format. Use: get_player_info-username");
+            return;
+        }
+
+        String requestedUsername = parts[1];
+        
+        // Get player's ELO from database
+        int playerElo = EloMod.getCurrentElo(requestedUsername);
+        
+        // Send player info back to requesting client
+        String playerInfo = "PLAYER_INFO-" + requestedUsername + ":" + playerElo;
+        sendMessage(playerInfo);
     }
 
     private void handleGetRankings() {
@@ -396,15 +420,26 @@ public class clientHandler implements Runnable {
     }
 
     private void startGame(TicTacToe game) {
-        // Notify both players that game is starting
-        String gameStartMsg = "GAME_START-" + game.getGameId() + ":" + game.getPlayer1() + ":" + game.getPlayer2();
-
-        // Broadcast ONLY to players in this game
+        String player1 = game.getPlayer1();
+        String player2 = game.getPlayer2();
+        int player1Elo = EloMod.getCurrentElo(player1);
+        int player2Elo = EloMod.getCurrentElo(player2);
+        
+        // Enhanced game start message with player info and ELO
+        // Format: "GAME_START-gameId:player1:player2:dimension:player1Elo:player2Elo"
+        String gameStartMsg = "GAME_START-" + game.getGameId() + ":" + 
+                            player1 + ":" + player2 + ":" + 
+                            game.getDimension() + ":" +
+                            player1Elo + ":" + player2Elo;
+        
+        // Send to both players only
         ServerMain.broadcastToGamePlayers(game.getGameId(), gameStartMsg);
-
-        // Remove game from lobby (broadcast to all lobby users)
+        
+        // Remove game from lobby
         String gameRemovedMsg = "GAME_REMOVED-" + game.getGameId();
-        ServerMain.broadcastToAll(gameRemovedMsg, this);
+        ServerMain.broadcastToAll(gameRemovedMsg, null);
+        
+        System.out.println("Game started: " + game.getGameId() + " between " + player1 + " (" + player1Elo + ") and " + player2 + " (" + player2Elo + ")");
     }
 
     private void handleGameEnd(TicTacToe game) {
