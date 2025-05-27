@@ -22,6 +22,9 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
 
 public class GameController {
     @FXML private GridPane board3x3;
@@ -33,6 +36,7 @@ public class GameController {
     @FXML private Label elo2;
     @FXML private ListView<String> chatArea;
     @FXML private TextField chatBox;
+    @FXML private Label timerLabel;
 
     @FXML private ImageView grid0;
     @FXML private ImageView grid1;
@@ -58,12 +62,15 @@ public class GameController {
     private Image symbolX;
     private Image symbolO;
     private int turn;
+    private Timeline gameTimer;
+    private int secondsElapsed = 0;
 
     @FXML
     public void initialize() {
         // Register this controller with ClientMain
         ClientMain.setGameController(this);
         initializeChat();
+        initializeTimer();
 
         // Get dimension from ClientMain (set during game creation)
         this.dimension = ClientMain.getCurrentGameDimension();
@@ -351,5 +358,45 @@ public class GameController {
         }
     }
 
+    private void initializeTimer() {
+        // Reset timer
+        secondsElapsed = 0;
+        
+        // Update timer label
+        if (timerLabel != null) {
+            timerLabel.setText("Time: 00:00");
+        }
+        
+        // Stop existing timer if running
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+        
+        // Create new timer
+        gameTimer = new Timeline(
+            new KeyFrame(Duration.seconds(1), event -> {
+                secondsElapsed++;
+                updateTimerDisplay();
+            })
+        );
+        
+        gameTimer.setCycleCount(Timeline.INDEFINITE);
+        gameTimer.play();
+    }
+
+    private void updateTimerDisplay() {
+        if (timerLabel != null) {
+            int minutes = secondsElapsed / 60;
+            int seconds = secondsElapsed % 60;
+            timerLabel.setText(String.format("Time: %02d:%02d", minutes, seconds));
+        }
+    }
+
+    // Stop timer
+    public void stopTimer() {
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+    }
 
 }
