@@ -344,7 +344,6 @@ public class clientHandler implements Runnable {
             return;
         }
         
-
         // Find the game this player is in
         TicTacToe game = ServerMain.getGamesManager().getGameByPlayer(username);
         if (game == null || !game.getGameId().equals(currentGameId)) {
@@ -355,7 +354,6 @@ public class clientHandler implements Runnable {
         // Validate it's player's turn
         if (!game.getTurn().equals(username)) {
             sendMessage("ERROR-Not your turn");
-            
             return;
         }
 
@@ -387,12 +385,17 @@ public class clientHandler implements Runnable {
             System.out.println("Broadcasting move: " + moveMsg);
             ServerMain.broadcastToGameSession(currentGameId, moveMsg);
 
-            // Check if game is over
+            // Check if game is over after each move
             if (game.isGameOver()) {
+                System.out.println("Game is over! State: " + game.getGameState() + ", Winner: " + game.getWinner());
                 handleGameEnd(game);
             }
         } catch (NumberFormatException e) {
             sendMessage("ERROR-Invalid position format");
+        } catch (Exception e) {
+            System.err.println("Error processing move: " + e.getMessage());
+            e.printStackTrace();
+            sendMessage("ERROR-Server error processing move");
         }
     }
 

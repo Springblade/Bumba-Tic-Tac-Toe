@@ -56,19 +56,35 @@ public class TicTacToe {
         }
     }
 
-    private boolean isBoardFull() {
+    public boolean isGameOver() {
+        // Game is over if there's a winner or the board is full (tie)
+        return winner != null || isBoardFull();
+    }
+
+    public boolean isBoardFull() {
         for (int i = 0; i < dimension; i++) {
             for (int j = 0; j < dimension; j++) {
-                if (Objects.equals(board[i][j], " ")) {
-                    return false;
+                if (board[i][j].equals(" ")) {
+                    return false; // Found an empty space
                 }
             }
         }
-        return true;
+        return true; // No empty spaces found
     }
 
-    public boolean isGameOver() {
-        return winner != null || isBoardFull();
+    // Debug method to print the current board state
+    public void printBoard() {
+        System.out.println("Current board state for game " + gameId + ":");
+        for (int i = 0; i < dimension; i++) {
+            StringBuilder row = new StringBuilder();
+            for (int j = 0; j < dimension; j++) {
+                row.append("[").append(board[i][j]).append("]");
+            }
+            System.out.println(row.toString());
+        }
+        System.out.println("Current turn: " + turn);
+        System.out.println("Game state: " + gameState);
+        System.out.println("Winner: " + (winner != null ? winner : "none"));
     }
 
     public String getGameId() {

@@ -332,15 +332,61 @@ public class GameController {
     }
 
     // Method called when game ends (from server message)
-    public void handleGameEnd(String gameEndInfo) {
+    public void handleGameEnd(String endReason, String winner) {
         Platform.runLater(() -> {
-            System.out.println("Game ended: " + gameEndInfo);
+            System.out.println("Game ended: " + endReason + ", Winner: " + winner);
             
-            // Show game end message for a few seconds, then return to lobby
-            // You can add a dialog or label here to show the result
+            // Stop the timer
+            if (gameTimer != null) {
+                gameTimer.stop();
+            }
             
-            // The game does not go back to lobby screen after ending, but instead have a return button for the player
-            // placehilder for game end message
+            // Disable the board
+            if (board3x3 != null) {
+                board3x3.setDisable(true);
+            }
+            
+            // Show game end message
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Game Over");
+            
+            String currentUsername = ClientMain.getClient() != null ? ClientMain.getClient().getUsername() : "";
+            String player1 = ClientMain.getCurrentPlayer1();
+            String player2 = ClientMain.getCurrentPlayer2();
+            
+            if (endReason.equals("WIN")) {
+                if (winner.equals(currentUsername)) {
+                    alert.setHeaderText("You Won!");
+                    alert.setContentText("Congratulations! You have won the game.");
+                } else if (winner.equals("NONE")) {
+                    alert.setHeaderText("Game Tied");
+                    alert.setContentText("The game ended in a tie.");
+                } else {
+                    alert.setHeaderText("You Lost");
+                    alert.setContentText(winner + " has won the game.");
+                }
+            } else if (endReason.equals("TIE")) {
+                alert.setHeaderText("Game Tied");
+                alert.setContentText("The game ended in a tie.");
+            } else if (endReason.equals("FORFEIT")) {
+                if (!winner.equals(currentUsername)) {
+                    alert.setHeaderText("Opponent Forfeited");
+                    alert.setContentText("Your opponent has left the game. You win!");
+                } else {
+                    alert.setHeaderText("You Forfeited");
+                    alert.setContentText("You have left the game.");
+                }
+            }
+            
+            // Add a button to return to lobby
+            ButtonType returnToLobbyButton = new ButtonType("Return to Lobby");
+            alert.getButtonTypes().setAll(returnToLobbyButton);
+            
+            alert.showAndWait().ifPresent(buttonType -> {
+                if (buttonType == returnToLobbyButton) {
+                    backToLobbyScene();
+                }
+            });
         });
     }
 
@@ -348,12 +394,27 @@ public class GameController {
     @FXML
     private void backToLobbyScene() {
         try {
-            root = FXMLLoader.load(getClass().getResource("/com/bumba/tic_tac_toe/lobbyScene.fxml"));
-            scene = new Scene(root);
-            stage = (Stage) ffButton.getScene().getWindow();
+            // Stop any ongoing processes
+            if (gameTimer != null) {
+                gameTimer.stop();
+            }
+            
+            // Load the lobby scene
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/bumba/tic_tac_toe/lobbyScene.fxml"));
+            Parent root = loader.load();
+            Scene scene = new Scene(root);
+            
+            // Get the current stage
+            Stage stage = (Stage) board3x3.getScene().getWindow();
+            
+            // Set the new scene
             stage.setScene(scene);
+            stage.setTitle("Tic Tac Toe - Lobby");
             stage.show();
+            
+            System.out.println("Returned to lobby scene");
         } catch (IOException e) {
+            System.err.println("Failed to load lobby scene: " + e.getMessage());
             e.printStackTrace();
         }
     }
