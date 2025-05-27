@@ -377,17 +377,22 @@ public class clientHandler implements Runnable {
             }
             
             // Make the move using TicTacToe's makeMove method
-            game.makeMove(username, pos);
+            boolean moveSuccess = game.makeMove(pos, username);
+            if (!moveSuccess) {
+                sendMessage("ERROR-Invalid move");
+                return;
+            }
             
-            // Broadcast move to ALL players and spectators in this game
-            String moveMsg = "GAME_MOVE-" + game.getGameId() + ":" + username + ":" + position + ":" + game.getTurn();
+            // Check for winner after each move
+            game.checkWinner();
             
-            System.out.println("Broadcasting move: " + moveMsg);
-            ServerMain.broadcastToGameSession(currentGameId, moveMsg);
-
-            // Check if game is over after each move
-            if (game.isGameOver()) {
-                System.out.println("Game is over! State: " + game.getGameState() + ", Winner: " + game.getWinner());
+            // Broadcast move to all players in the game
+            String nextTurn = game.getTurn();
+            String moveMsg = "GAME_MOVE-" + game.getGameId() + "-" + position + "-" + username + "-" + nextTurn;
+            ServerMain.broadcastToGameSession(game.getGameId(), moveMsg);
+            
+            // Check if game has ended (winner or tie)
+            if (game.getWinner() != null || game.isBoardFull()) {
                 handleGameEnd(game);
             }
         } catch (NumberFormatException e) {

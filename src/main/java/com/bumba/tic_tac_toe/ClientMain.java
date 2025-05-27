@@ -339,14 +339,14 @@ public class ClientMain extends Application {
             System.out.println("Received game end: " + content);
             
             String[] parts = content.split(":");
-            if (parts.length < 3) {
+            if (parts.length < 2) {
                 System.err.println("Invalid game end format: " + content);
                 return;
             }
             
             String gameId = parts[0];
-            String endReason = parts[1];
-            String winner = parts[2];
+            String winner = parts.length > 1 ? parts[1] : "NONE";
+            String endReason = winner.equals("TIE") ? "TIE" : "WIN";
             
             // Update UI if game controller is available
             if (gameController != null) {

@@ -33,18 +33,72 @@ public class TicTacToe {
         }
     }
 
-    public void makeMove(String player, int move) {
-        int row = move / dimension;
-        int col = move % dimension;
-        if (Objects.equals(board[row][col], " ")) {
-            board[row][col] = Objects.equals(player, player1) ? "X" : "O";
-            turn = player.equals(player1) ? player2 : player1;
-            checkWinner();
-            updateGameState();
+    public boolean makeMove(int position, String player) {
+        // Convert position to row/col
+        int row = position / dimension;
+        int col = position % dimension;
+        
+        // Check if position is valid and empty
+        if (row < 0 || row >= dimension || col < 0 || col >= dimension || 
+            !board[row][col].equals(" ")) {
+            return false;
         }
+        
+        // Make the move
+        board[row][col] = player.equals(player1) ? "X" : "O";
+        
+        // Switch turn
+        turn = player.equals(player1) ? player2 : player1;
+        
+        // Check for winner
+        checkWinner();
+        
+        // Update game state
+        updateGameState();
+        
+        // Debug output
+        System.out.println("Move made at position " + position + " by " + player);
+        printBoard();
+        
+        return true;
     }
 
-    public void checkWinner() {}
+    public void checkWinner() {
+        // Check rows
+        for (int i = 0; i < dimension; i++) {
+            if (!board[i][0].equals(" ") && 
+                board[i][0].equals(board[i][1]) && 
+                board[i][0].equals(board[i][2])) {
+                winner = board[i][0].equals("X") ? player1 : player2;
+                return;
+            }
+        }
+        
+        // Check columns
+        for (int i = 0; i < dimension; i++) {
+            if (!board[0][i].equals(" ") && 
+                board[0][i].equals(board[1][i]) && 
+                board[0][i].equals(board[2][i])) {
+                winner = board[0][i].equals("X") ? player1 : player2;
+                return;
+            }
+        }
+        
+        // Check diagonals
+        if (!board[0][0].equals(" ") && 
+            board[0][0].equals(board[1][1]) && 
+            board[0][0].equals(board[2][2])) {
+            winner = board[0][0].equals("X") ? player1 : player2;
+            return;
+        }
+        
+        if (!board[0][2].equals(" ") && 
+            board[0][2].equals(board[1][1]) && 
+            board[0][2].equals(board[2][0])) {
+            winner = board[0][2].equals("X") ? player1 : player2;
+            return;
+        }
+    }
 
     private void updateGameState() {
         if (winner != null) {
@@ -65,11 +119,11 @@ public class TicTacToe {
         for (int i = 0; i < dimension; i++) {
             for (int j = 0; j < dimension; j++) {
                 if (board[i][j].equals(" ")) {
-                    return false; // Found an empty space
+                    return false;
                 }
             }
         }
-        return true; // No empty spaces found
+        return true;
     }
 
     // Debug method to print the current board state

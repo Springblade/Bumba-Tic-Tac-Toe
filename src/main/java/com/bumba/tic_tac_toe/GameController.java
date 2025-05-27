@@ -237,48 +237,49 @@ public class GameController {
             // Check if board exists
             if (board3x3 == null) {
                 System.err.println("ERROR: board3x3 is null!");
-                showErrorAlert("UI Error", "Game board not found in the UI.");
                 return;
             }
             
-            // Initialize grids list
-            grids = new ArrayList<>();
+            // Initialize grids list if it's null
+            if (grids == null) {
+                grids = new ArrayList<>();
+            } else {
+                grids.clear(); // Clear existing entries
+            }
             
-            // Add all grid ImageViews to the list
-            ImageView[] gridViews = {grid0, grid1, grid2, grid3, grid4, grid5, grid6, grid7, grid8};
-            for (ImageView grid : gridViews) {
-                if (grid != null) {
+            // Get all grid cells from the FXML
+            for (Node node : board3x3.getChildren()) {
+                if (node instanceof ImageView) {
+                    ImageView grid = (ImageView) node;
                     grids.add(grid);
+                    
+                    // Clear any existing images
+                    grid.setImage(null);
+                    
+                    // Add click handler
+                    final int position = grids.size() - 1;
+                    grid.setOnMouseClicked(event -> {
+                        if (!gameEnded && isMyTurn) {
+                            handleCellClick(position);
+                        }
+                    });
                 }
             }
             
-            if (grids.size() != 9) {
-                System.err.println("WARNING: Expected 9 grid cells, found " + grids.size());
+            // Debug output
+            System.out.println("Initialized " + grids.size() + " grid cells");
+            
+            // Load symbols if not already loaded
+            if (symbolX == null || symbolO == null) {
+                loadGameResources();
             }
             
-            // Clear any existing images and add click handlers
-            for (int i = 0; i < grids.size(); i++) {
-                final int position = i;
-                ImageView grid = grids.get(i);
-                
-                // Clear image
-                grid.setImage(null);
-                
-                // Add click handler
-                grid.setOnMouseClicked(event -> {
-                    if (!gameEnded && isMyTurn) {
-                        handleCellClick(position);
-                    }
-                });
-            }
-            
-            // Set initial game state
+            // Reset game state
             resetBoard();
             
         } catch (Exception e) {
             System.err.println("Error initializing game board: " + e.getMessage());
             e.printStackTrace();
-            showErrorAlert("Initialization Error", "Failed to initialize game board: " + e.getMessage());
         }
     }
 
@@ -405,11 +406,25 @@ public class GameController {
             String currentUsername = ClientMain.getClient().getUsername();
             String gameId = ClientMain.getCurrentGameId();
             
+            // Show symbol immediately (will be confirmed by server later)
+            String player1 = ClientMain.getCurrentPlayer1();
+            boolean isPlayer1 = currentUsername.equals(player1);
+            Image symbolToUse = isPlayer1 ? symbolX : symbolO;
+            grids.get(position).setImage(symbolToUse);
+            
+            // Play sound if available
+            if (clickSfxPlayer != null) {
+                clickSfxPlayer.stop();
+                clickSfxPlayer.play();
+            }
+            
             // Send move to server
             String moveCommand = "move-" + gameId + "-" + position + "-" + currentUsername;
             ClientMain.getClient().sendMessage(moveCommand);
             
-            // The UI will be updated when the server confirms the move
+            // Temporarily disable board until server confirms move
+            board3x3.setDisable(true);
+            
             System.out.println("Sent move: " + moveCommand);
             
         } catch (Exception e) {
