@@ -59,7 +59,6 @@ public class LobbyController {
     @FXML
     public void initialize() {
         new3x3game.setOnAction(event -> createGame(3));
-        new9x9game.setOnAction(event -> createGame(9));
         ClientMain.setLobbyController(this);
 
         // Initialize game list

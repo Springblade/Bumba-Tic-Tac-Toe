@@ -381,10 +381,23 @@ public class ClientMain extends Application {
                 break;
                 
             case "GAME_MOVE":
-                System.out.println("Game move: " + content);
-
-                // Update game board here
-
+                System.out.println("Game move received: " + content);
+                if (gameController != null) {
+                    // Parse move data: gameId:username:position:nextTurn
+                    String[] moveData = content.split(":");
+                    if (moveData.length >= 4) {
+                        try {
+                            int position = Integer.parseInt(moveData[2]);
+                            String playerWhoMoved = moveData[1];
+                            
+                            Platform.runLater(() -> {
+                                gameController.handleOpponentMove(position, playerWhoMoved);
+                            });
+                        } catch (NumberFormatException e) {
+                            System.err.println("Invalid move position: " + moveData[2]);
+                        }
+                    }
+                }
                 break;
             case "USER_JOIN":
             case "USER_LEAVE":

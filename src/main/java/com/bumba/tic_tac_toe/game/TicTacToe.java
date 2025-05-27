@@ -33,7 +33,7 @@ public class TicTacToe {
         }
     }
 
-    private void makeMove(String player, int move) {
+    public void makeMove(String player, int move) {
         int row = move / dimension;
         int col = move % dimension;
         if (Objects.equals(board[row][col], " ")) {
@@ -85,6 +85,7 @@ public class TicTacToe {
 
     public void setBoard() {
         this.board = new String[dimension][dimension];
+        initBoard();
     }
 
     public String getPlayer1() {

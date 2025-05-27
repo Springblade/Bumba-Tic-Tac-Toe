@@ -228,6 +228,8 @@ public class clientHandler implements Runnable {
         this.currentGameId = game.getGameId();
         this.isSpectator = false;
 
+        game.setBoard();
+
         sendMessage("GAME_CREATED-" + game.getGameId());
 
         // Broadcast new game to lobby
@@ -341,6 +343,7 @@ public class clientHandler implements Runnable {
             sendMessage("ERROR-Username mismatch");
             return;
         }
+        
 
         // Find the game this player is in
         TicTacToe game = ServerMain.getGamesManager().getGameByPlayer(username);
@@ -352,24 +355,41 @@ public class clientHandler implements Runnable {
         // Validate it's player's turn
         if (!game.getTurn().equals(username)) {
             sendMessage("ERROR-Not your turn");
+            
             return;
         }
 
         // Process the move
         try {
             int pos = Integer.parseInt(position);
-            if (makeMove(game, username, pos)) {
-                // Broadcast move ONLY to players and spectators in this game
-                String moveMsg = "GAME_MOVE-" + game.getGameId() + ":" + username + ":" + position + ":" + game.getTurn();
+            // Validate move range first
+            if (pos < 0 || pos >= (game.getDimension() * game.getDimension())) {
+                sendMessage("ERROR-Move position out of bounds");
+                return;
+            }
+            
+            // Check if position is available before making the move
+            int row = pos / game.getDimension();
+            int col = pos % game.getDimension();
+            
+            if (game.getBoard() == null || 
+                !game.getBoard()[row][col].equals(" ")) {
+                sendMessage("ERROR-Position already occupied");
+                return;
+            }
+            
+            // Make the move using TicTacToe's makeMove method
+            game.makeMove(username, pos);
+            
+            // Broadcast move to ALL players and spectators in this game
+            String moveMsg = "GAME_MOVE-" + game.getGameId() + ":" + username + ":" + position + ":" + game.getTurn();
+            
+            System.out.println("Broadcasting move: " + moveMsg);
+            ServerMain.broadcastToGameSession(currentGameId, moveMsg);
 
-                ServerMain.broadcastToGameSession(currentGameId, moveMsg);
-
-                // Check if game is over
-                if (game.isGameOver()) {
-                    handleGameEnd(game);
-                }
-            } else {
-                sendMessage("ERROR-Invalid move");
+            // Check if game is over
+            if (game.isGameOver()) {
+                handleGameEnd(game);
             }
         } catch (NumberFormatException e) {
             sendMessage("ERROR-Invalid position format");
@@ -498,22 +518,6 @@ public class clientHandler implements Runnable {
                 client.isSpectator = false;
             }
         }
-    }
-
-    private boolean makeMove(TicTacToe game, String player, int move) {
-        int dimension = game.getBoard().length;
-        int row = move / dimension;
-        int col = move % dimension;
-
-        if (row >= 0 && row < dimension && col >= 0 && col < dimension &&
-                game.getBoard()[row][col].equals(" ")) {
-
-            game.getBoard()[row][col] = player.equals(game.getPlayer1()) ? "X" : "O";
-            game.setTurn(player.equals(game.getPlayer1()) ? game.getPlayer2() : game.getPlayer1());
-            game.checkWinner();
-            return true;
-        }
-        return false;
     }
 
     // Utility methods

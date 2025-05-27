@@ -10,7 +10,7 @@
    <children>
       <Button fx:id="quickJoinButton" layoutX="506.0" layoutY="360.0" mnemonicParsing="false" onAction="#quickJoin" text="Quick Join" />
       <Button fx:id="createGameButton" layoutX="499.0" layoutY="282.0" mnemonicParsing="false" onAction="#chooseBoard" text="Create Game" />
-      <Button fx:id="new9x9game" layoutX="556.0" layoutY="282.0" mnemonicParsing="false" text="9x9" visible="false" />
+      <Button fx:id="new9x9game" disable="true" layoutX="556.0" layoutY="282.0" mnemonicParsing="false" text="9x9" visible="false" />
       <Button fx:id="new3x3game" layoutX="507.0" layoutY="282.0" mnemonicParsing="false" text="3x3" visible="false" />
       <TabPane fx:id="tabPane" prefHeight="400.0" prefWidth="486.0" tabClosingPolicy="UNAVAILABLE">
         <tabs>
