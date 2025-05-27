@@ -96,24 +96,70 @@ public class ClientMain extends Application {
 
     public static void connect() {
         try {
-            client = new Client("localhost", 5000, instance::onMessageReceived);
-            client.startClient();
+            // Check if already connected
+            if (client != null && client.isConnected()) {
+                System.out.println("Already connected to server");
+                connectedProperty.set(true);
+                return;
+            }
+            
+            System.out.println("Connecting to server...");
+            // Create client with message handler
+            client = new Client("localhost", 5000, ClientMain::processMessage);
+            
+            // Start client in a separate thread
+            Thread clientThread = new Thread(() -> {
+                try {
+                    client.startClient();
+                } catch (Exception e) {
+                    System.err.println("Client error: " + e.getMessage());
+                    Platform.runLater(() -> {
+                        connectedProperty.set(false);
+                        showConnectionError("Connection Error", 
+                            "Failed to connect to server: " + e.getMessage());
+                    });
+                }
+            });
+            clientThread.setDaemon(true);
+            clientThread.start();
+            
+            // Set connection status
+            connectedProperty.set(true);
             System.out.println("Connected to server successfully");
-        } catch (IOException e) {
-            System.err.println("Failed to connect to server: " + e.getMessage());
+            
+        } catch (Exception e) {
+            System.err.println("Connection error: " + e.getMessage());
+            connectedProperty.set(false);
+            showConnectionError("Connection Error", 
+                "Failed to connect to server: " + e.getMessage());
         }
     }
 
+    private static void showConnectionError(String title, String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
 
     public static void login(String username, String password) {
-        if (client != null) {
+        if (client != null && client.isConnected()) {
             client.login(username, password);
+        } else {
+            System.err.println("Cannot login: client not connected");
+            showConnectionError("Connection Error", "Not connected to server. Please restart the application.");
         }
     }
 
     public static void register(String username, String password) {
-        if (client != null) {
+        if (client != null && client.isConnected()) {
             client.register(username, password);
+        } else {
+            System.err.println("Cannot register: client not connected");
+            showConnectionError("Connection Error", "Not connected to server. Please restart the application.");
         }
     }
 
@@ -122,37 +168,36 @@ public class ClientMain extends Application {
     }
 
     public static void requestRankings() {
-        if (client != null) {
+        if (client != null && client.isConnected()) {
             client.requestRankings();
-        }
-    }
-
-    public static void sendGameMove(String moveIndex) {
-        if (client != null) {
-            client.sendGameMove(moveIndex);
+        } else {
+            System.err.println("Cannot request rankings: client not connected");
         }
     }
 
     public static void sendJoinGame(String gameID) {
-        if (client != null) {
+        if (client != null && client.isConnected()) {
             client.sendJoinGame(gameID);
-        }
-    }
-
-    public static void sendChatMessage(String message) {
-        if (client != null) {
-            client.sendMessage("chat-" + message);
-            System.out.println("Sending chat message: " + message);
         } else {
-            System.err.println("Client not connected - cannot send chat message");
+            System.err.println("Cannot join game: client not connected");
+            showConnectionError("Connection Error", "Not connected to server. Please restart the application.");
         }
     }
 
     public void getGameList() {
-        client.getGameList();
+        if (client != null && client.isConnected()) {
+            client.getGameList();
+        } else {
+            System.err.println("Cannot get game list: client not connected");
+        }
     }
+
     public void getRankList() {
-        client.getRankList();
+        if (client != null && client.isConnected()) {
+            client.getRankList();
+        } else {
+            System.err.println("Cannot get rank list: client not connected");
+        }
     }
 
     public static void setCurrentGamePlayers(String player1, String player2, int player1Elo, int player2Elo) {
@@ -184,8 +229,10 @@ public class ClientMain extends Application {
     
     // Method to request player info from server
     public static void requestPlayerInfo(String username) {
-        if (client != null) {
-            client.sendMessage("get_player_info-" + username);
+        if (client != null && client.isConnected()) {
+            client.requestPlayerInfo(username);
+        } else {
+            System.err.println("Cannot request player info: client not connected");
         }
     }
 
@@ -202,6 +249,8 @@ public class ClientMain extends Application {
     public static String getOpponentName() {
         if (client == null) return null;
         String username = client.getUsername();
+        if (username == null) return null;
+        
         if (username.equals(currentPlayer1)) {
             return currentPlayer2;
         } else if (username.equals(currentPlayer2)) {
@@ -210,231 +259,280 @@ public class ClientMain extends Application {
         return null;
     }
 
-    private void onMessageReceived(String message) {
-        System.out.println("Message received in ClientMain: " + message);
-
-        // Parse message tag and content
-        String[] parts = message.split("-", 2);
-        String tag = parts[0];
-        String content = parts.length > 1 ? parts[1] : "";
-
-        // Handle different types of messages based on tags
-        switch (tag) {
-            case "SERVER":
-            case "AUTH_REQUEST":
-                System.out.println("Server message: " + content);
-                break;
-            case "LOGIN_SUCCESS":
-                System.out.println("Login successful: " + content);
-                // Navigate to lobby scene here
-                Platform.runLater(() -> authenController.transitionToLobbyScene());
-                break;
-            case "LOGIN_FAILED":
-                authenController.handleError(content);
-                break;
-            case "REGISTER_SUCCESS":
-                System.out.println("Registration successful: " + content);
-                break;
-            case "REGISTER_FAILED":
-                authenController.handleError(content);
-                break;
-
-            case "GAME_CREATED":
-                System.out.println("Game created successfully with ID: " + content);
-                ClientMain.setCurrentGameInfo(content, ClientMain.getCurrentGameDimension());
-                // Request creator's player info when game is created
-                if (client != null) {
-                    ClientMain.requestPlayerInfo(client.getUsername());
-                }
-                
-                // Immediately transition creator to game scene
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.transitionToGame());
-                }
-                break;
-
-            case "GAME_START":
-                System.out.println("Game starting: " + content);
-                String[] gameInfo = content.split(":");
-                if (gameInfo.length >= 6) {
-                    String gameId = gameInfo[0];
-                    String player1 = gameInfo[1];
-                    String player2 = gameInfo[2];
-                    int dimension = Integer.parseInt(gameInfo[3]);
-                    int player1Elo = Integer.parseInt(gameInfo[4]);
-                    int player2Elo = Integer.parseInt(gameInfo[5]);
-                    
-                    // Store all game and player info
-                    ClientMain.setCurrentGameInfo(gameId, dimension);
-                    ClientMain.setCurrentGamePlayers(player1, player2, player1Elo, player2Elo);
-                }
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.transitionToGame());
-                }
-                break;
-
-            case "PLAYER_INFO":
-                System.out.println("Received player info: " + content);
-                // Format: "username:elo"
-                String[] playerInfo = content.split(":");
-                if (playerInfo.length >= 2) {
-                    String username = playerInfo[0];
-                    int elo = Integer.parseInt(playerInfo[1]);
-                    
-                    // Store the creator's info when game is created
-                    if (client != null && username.equals(client.getUsername())) {
-                        // This is the creator's info
-                        ClientMain.setCurrentGamePlayers(username, null, elo, 0);
+    // Handle game move messages from server
+    private static void handleGameMove(String content) {
+        try {
+            System.out.println("Received game move: " + content);
+            
+            // Parse move data: gameId:playerWhoMoved:position:nextTurn
+            String[] parts = content.split(":");
+            if (parts.length < 4) {
+                System.err.println("Invalid game move format: " + content);
+                return;
+            }
+            
+            String gameId = parts[0];
+            String playerWhoMoved = parts[1];
+            int position = Integer.parseInt(parts[2]);
+            String nextTurn = parts[3];
+            
+            // Update current game state
+            currentGameId = gameId;
+            
+            // Update UI if game controller is available
+            if (gameController != null) {
+                Platform.runLater(() -> {
+                    try {
+                        // If it's not our move, update the board with opponent's move
+                        String currentUsername = client != null ? client.getUsername() : "";
+                        if (!playerWhoMoved.equals(currentUsername)) {
+                            gameController.handleOpponentMove(position, playerWhoMoved);
+                        }
+                        
+                        // Update turn indicator
+                        gameController.updateTurnIndicator(nextTurn);
+                    } catch (Exception e) {
+                        System.err.println("Error updating UI for game move: " + e.getMessage());
+                        e.printStackTrace();
                     }
-                    
-                    // // Update game controller if it exists
-                    // if (gameController != null) {
-                    //     gameController.updatePlayerInfo(username, elo);
-                    // }
-                }
-                break;
-                
-            case "GAMES_LIST":
-                System.out.println("Received game list from server: " + content);
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.updateGameListFromServer(content));
-                }
-                break;
+                });
+            } else {
+                System.err.println("Game controller is null, can't update UI");
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling game move: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
-            case "GAME_END":
-                System.out.println("Game ended: " + content);
-                // Placeholder for handling game end
-                // Transition back to lobby when game ends
-                // if (gameController != null) {
-                //     Platform.runLater(() -> gameController.handleGameEnd(content));
-                // }
-                break;
+    // Send a game move to the server
+    public static void sendGameMove(String position) {
+        try {
+            if (client == null) {
+                System.err.println("Cannot send move: client is null");
+                return;
+            }
+            
+            if (!client.isConnected()) {
+                System.err.println("Cannot send move: client is not connected");
+                return;
+            }
+            
+            String username = client.getUsername();
+            if (username == null || username.isEmpty()) {
+                System.err.println("Cannot send move: not authenticated");
+                return;
+            }
+            
+            // Format: move-username-position
+            client.sendGameMove(position);
+            System.out.println("Sent move: position " + position);
+        } catch (Exception e) {
+            System.err.println("Error sending game move: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
-            case "LEAVE_SUCCESS":
-                System.out.println("Successfully left game: " + content);
-                // PLaceholder for handling leave success
-                // Return to lobby when manually leaving
-                // if (gameController != null) {
-                //     Platform.runLater(() -> gameController.transitionBackToLobby());
-                // }
-                // break;
-                
-            case "SPECTATE_SUCCESS":
-                System.out.println("Successfully joined as spectator: " + content);
-                // Extract game dimension from spectate success message
-                // Format: "Now spectating game gameId dimension"
-                String[] spectateInfo = content.split(" ");
-                if (spectateInfo.length >= 4) {
-                    String gameId = spectateInfo[3];
-                    // Request game info to get dimension
-                    ClientMain.getClient().sendMessage("get_game_info-" + gameId);
-                }
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.transitionToGame());
-                }
-                break;
-                
-            case "SPECTATOR_JOIN":
-                System.out.println("Spectator joined: " + content);
-                // Placeholder for handling spectator joining
-                break;
-                
-            case "SPECTATOR_LEAVE":
-                System.out.println("Spectator left: " + content);
-                // placeholder for handling spectator leaving
-                break;
-                
-            case "NO_GAMES":
-                System.out.println("No games available on server");
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.clearGameList());
-                }
-                break;
-            case "RANKINGS_LIST":
-                System.out.println("Received rankings from server: " + content);
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.updateRankingsFromServer(content));
-                }
-                break;
-            case "NO_RANKINGS":
-                System.out.println("No rankings available on server");
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.clearRankings());
-                }
-                break;
-            case "GAME_AVAILABLE":
-                System.out.println("New game available in lobby: " + content);
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.addGameToLobby(content));
-                }
-                break;
-            case "GAME_REMOVED":
-                System.out.println("Game removed from lobby: " + content);
-                if (lobbyController != null) {
-                    Platform.runLater(() -> lobbyController.removeGameFromLobby(content));
-                }
-                break;
-            case "CHAT":
-                System.out.println("Chat message: " + content);
-                if (gameController != null) {
-                    Platform.runLater(() -> gameController.addChatMessage(content));
-                }
-                break;
+    // Handle game end messages from server
+    private static void handleGameEnd(String content) {
+        try {
+            System.out.println("Received game end: " + content);
+            
+            String[] parts = content.split(":");
+            if (parts.length < 3) {
+                System.err.println("Invalid game end format: " + content);
+                return;
+            }
+            
+            String gameId = parts[0];
+            String endReason = parts[1];
+            String winner = parts[2];
+            
+            // Update UI if game controller is available
+            if (gameController != null) {
+                Platform.runLater(() -> {
+                    try {
+                        gameController.handleGameEnd(endReason, winner);
+                    } catch (Exception e) {
+                        System.err.println("Error updating UI for game end: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+            } else {
+                System.err.println("Game controller is null, can't update UI for game end");
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling game end: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
-            case "CHAT_HISTORY":
-                System.out.println("Received chat history: " + content);
-                if (gameController != null) {
-                    String[] messages = content.split("-");
+    public static void processMessage(String message) {
+        try {
+            System.out.println("Received: " + message);
+            
+            // Parse message
+            String[] parts = message.split("-", 2);
+            String tag = parts[0];
+            String content = parts.length > 1 ? parts[1] : "";
+            
+            switch (tag) {
+                case "AUTH_OK":
+                case "LOGIN_SUCCESS":
                     Platform.runLater(() -> {
-                        for (String chatMessage : messages) {
-                            if (!chatMessage.isEmpty()) {
-                                gameController.addChatMessage(chatMessage);
-                            }
+                        try {
+                            // Load lobby scene
+                            FXMLLoader loader = new FXMLLoader(ClientMain.class.getResource("/com/bumba/tic_tac_toe/lobby.fxml"));
+                            Scene scene = new Scene(loader.load(), 800, 600);
+                            
+                            // Get controller
+                            lobbyController = loader.getController();
+                            
+                            // Show lobby
+                            Stage stage = (Stage) authenController.getScene().getWindow();
+                            stage.setScene(scene);
+                            stage.setTitle("Tic Tac Toe - Lobby");
+                        } catch (Exception e) {
+                            System.err.println("Error loading lobby: " + e.getMessage());
+                            e.printStackTrace();
                         }
                     });
-                }
-                break;
-
-            case "CHAT_ACK":
-                System.out.println("Chat message sent successfully");
-                break;
-                
-            case "GAME_MOVE":
-                System.out.println("Game move received: " + content);
-                if (gameController != null) {
-                    // Parse move data: gameId:username:position:nextTurn
-                    String[] moveData = content.split(":");
-                    if (moveData.length >= 4) {
-                        try {
-                            int position = Integer.parseInt(moveData[2]);
-                            String playerWhoMoved = moveData[1];
-                            
-                            Platform.runLater(() -> {
-                                gameController.handleOpponentMove(position, playerWhoMoved);
-                            });
-                        } catch (NumberFormatException e) {
-                            System.err.println("Invalid move position: " + moveData[2]);
-                        }
+                    break;
+                    
+                case "AUTH_FAIL":
+                case "LOGIN_FAILED":
+                    Platform.runLater(() -> {
+                        authenController.handleError("Authentication failed: " + content);
+                    });
+                    break;
+                    
+                case "REGISTER_OK":
+                case "REGISTER_SUCCESS":
+                    Platform.runLater(() -> {
+                        authenController.handleError("Registration successful! You can now log in.");
+                    });
+                    break;
+                    
+                case "REGISTER_FAIL":
+                case "REGISTER_FAILED":
+                    Platform.runLater(() -> {
+                        authenController.handleError("Registration failed: " + content);
+                    });
+                    break;
+                    
+                case "GAME_START":
+                    handleGameStart(content);
+                    break;
+                    
+                case "GAME_MOVE":
+                    handleGameMove(content);
+                    break;
+                    
+                case "CHAT":
+                    handleGameChat(content);
+                    break;
+                    
+                case "GAME_END":
+                    handleGameEnd(content);
+                    break;
+                    
+                case "ERROR":
+                    System.err.println("Server error: " + content);
+                    break;
+                    
+                case "GAMES_LIST":
+                    if (lobbyController != null) {
+                        Platform.runLater(() -> lobbyController.updateGamesList(content));
                     }
+                    break;
+                    
+                case "RANKINGS_LIST":
+                    if (lobbyController != null) {
+                        Platform.runLater(() -> lobbyController.updateRankingsList(content));
+                    }
+                    break;
+                    
+                case "PLAYER_INFO":
+                    // Handle player info response
+                    break;
+                    
+                case "CONNECTION_LOST":
+                    Platform.runLater(() -> {
+                        connectedProperty.set(false);
+                        showConnectionError("Connection Lost", "Lost connection to the server. Please restart the application.");
+                    });
+                    break;
+                    
+                default:
+                    System.out.println("Unknown message: " + message);
+                    break;
+            }
+        } catch (Exception e) {
+            System.err.println("Error processing message: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void handleGameStart(String content) {
+        try {
+            // Parse game start data
+            String[] parts = content.split("-");
+            if (parts.length < 6) {
+                System.err.println("Invalid game start data: " + content);
+                return;
+            }
+            
+            String gameId = parts[0];
+            int dimension = Integer.parseInt(parts[1]);
+            String player1 = parts[2];
+            String player2 = parts[3];
+            int elo1 = Integer.parseInt(parts[4]);
+            int elo2 = Integer.parseInt(parts[5]);
+            
+            // Store game info
+            currentGameId = gameId;
+            currentGameDimension = dimension;
+            setCurrentGamePlayers(player1, player2, elo1, elo2);
+            
+            // Load game scene
+            Platform.runLater(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(ClientMain.class.getResource("/com/bumba/tic_tac_toe/game.fxml"));
+                    Scene scene = new Scene(loader.load(), 800, 600);
+                    
+                    // Get controller
+                    gameController = loader.getController();
+                    
+                    // Show game
+                    Stage stage = (Stage) lobbyController.getScene().getWindow();
+                    stage.setScene(scene);
+                    stage.setTitle("Tic Tac Toe - Game");
+                } catch (Exception e) {
+                    System.err.println("Error loading game: " + e.getMessage());
+                    e.printStackTrace();
                 }
-                break;
-            case "USER_JOIN":
-            case "USER_LEAVE":
-            case "USER_JOIN_GAME":
-                System.out.println("User notification: " + content);
-                break;
-            case "ERROR":
-                System.err.println("Server error: " + content);
-                break;
-            case "CONNECTION_LOST":
-                System.err.println("Connection to server lost");
-                break;
-            case "CONNECTION_ERROR":
-                System.err.println("Connection error occurred");
-                break;
-            default:
-                System.out.println("Unknown message: " + message);
-                break;
+            });
+        } catch (Exception e) {
+            System.err.println("Error handling game start: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void handleGameChat(String content) {
+        try {
+            // Check if we have a game controller
+            if (gameController == null) {
+                System.err.println("Cannot handle chat: game controller is null");
+                return;
+            }
+            
+            // Add message to chat area
+            Platform.runLater(() -> {
+                gameController.addChatMessage(content);
+            });
+        } catch (Exception e) {
+            System.err.println("Error handling chat: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
