@@ -6,6 +6,7 @@ import java.util.List;
 import com.bumba.tic_tac_toe.LobbyController.GameEntry;
 
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -34,6 +35,7 @@ public class LobbyController {
     @FXML private TabPane tabPane;
     @FXML private Tab gameTab;
     @FXML private Tab rankings;
+    @FXML private Label connectionStatus;
 
     @FXML private Scene scene;
     @FXML private Parent root;
@@ -58,6 +60,25 @@ public class LobbyController {
 
     @FXML
     public void initialize() {
+        // Add connection status indicator
+        if (connectionStatus != null) {
+            connectionStatus.textProperty().bind(
+                Bindings.createStringBinding(() -> 
+                    ClientMain.isConnected() ? "Connected" : "Disconnected",
+                    ClientMain.connectedProperty()
+                )
+            );
+            
+            connectionStatus.styleProperty().bind(
+                Bindings.createStringBinding(() -> 
+                    ClientMain.isConnected() ? 
+                    "-fx-text-fill: green; -fx-font-weight: bold;" : 
+                    "-fx-text-fill: red; -fx-font-weight: bold;",
+                    ClientMain.connectedProperty()
+                )
+            );
+        }
+        
         new3x3game.setOnAction(event -> createGame(3));
         ClientMain.setLobbyController(this);
 

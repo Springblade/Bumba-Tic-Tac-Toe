@@ -1,13 +1,21 @@
 package com.bumba.tic_tac_toe;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import com.bumba.tic_tac_toe.client.Client;
+import com.bumba.tic_tac_toe.database.Connect;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextArea;
 import javafx.stage.Stage;
 
 public class ClientMain extends Application {
@@ -23,6 +31,17 @@ public class ClientMain extends Application {
     private static String currentPlayer2;
     private static int currentPlayer1Elo;
     private static int currentPlayer2Elo;
+    
+    // Add connection status property
+    private static BooleanProperty connectedProperty = new SimpleBooleanProperty(false);
+
+    public static BooleanProperty connectedProperty() {
+        return connectedProperty;
+    }
+
+    public static boolean isConnected() {
+        return connectedProperty.get();
+    }
 
     @Override
     public void start(Stage stage) throws IOException {
