@@ -343,7 +343,6 @@ public class clientHandler implements Runnable {
             sendMessage("ERROR-Username mismatch");
             return;
         }
-        
 
         // Find the game this player is in
         TicTacToe game = ServerMain.getGamesManager().getGameByPlayer(username);
@@ -355,44 +354,107 @@ public class clientHandler implements Runnable {
         // Validate it's player's turn
         if (!game.getTurn().equals(username)) {
             sendMessage("ERROR-Not your turn");
-            
             return;
         }
 
         // Process the move
         try {
-            int pos = Integer.parseInt(position);
+            int movePosition = Integer.parseInt(position);
+            
             // Validate move range first
-            if (pos < 0 || pos >= (game.getDimension() * game.getDimension())) {
+            if (movePosition < 0 || movePosition >= (game.getDimension() * game.getDimension())) {
                 sendMessage("ERROR-Move position out of bounds");
                 return;
             }
             
             // Check if position is available before making the move
-            int row = pos / game.getDimension();
-            int col = pos % game.getDimension();
+            int row = movePosition / game.getDimension();
+            int col = movePosition % game.getDimension();
             
-            if (game.getBoard() == null || 
-                !game.getBoard()[row][col].equals(" ")) {
+            if (game.getBoard() == null || !game.getBoard()[row][col].equals(" ")) {
                 sendMessage("ERROR-Position already occupied");
                 return;
             }
             
-            // Make the move using TicTacToe's makeMove method
-            game.makeMove(username, pos);
+            // Make the move
+            game.makeMove(username, movePosition);
             
-            // Broadcast move to ALL players and spectators in this game
-            String moveMsg = "GAME_MOVE-" + game.getGameId() + ":" + username + ":" + position + ":" + game.getTurn();
-            
-            System.out.println("Broadcasting move: " + moveMsg);
-            ServerMain.broadcastToGameSession(currentGameId, moveMsg);
-
-            // Check if game is over
+            // Check if game ended
             if (game.isGameOver()) {
-                handleGameEnd(game);
+                String gameEndMessage;
+                if (game.getWinner() != null) {
+                    gameEndMessage = "GAME_END-" + game.getWinner() + " wins!";
+                } else {
+                    gameEndMessage = "GAME_END-It's a tie!";
+                }
+                
+                // Broadcast game end to all players and spectators
+                ServerMain.broadcastToGameSession(currentGameId, gameEndMessage);
+                
+                // Update ELO ratings if there's a winner
+                if (game.getWinner() != null) {
+                    String winner = game.getWinner();
+                    String loser = winner.equals(game.getPlayer1()) ? game.getPlayer2() : game.getPlayer1();
+                    EloMod.eloUpdate(winner, "win");
+                    EloMod.eloUpdate(loser, "lose");
+                }
+                
+                // Clean up chat logs
+                gameChatLogs.remove(game.getGameId());
+                System.out.println("Chat log cleared for game: " + game.getGameId());
+                
+                // Remove game from active games
+                ServerMain.getGamesManager().removeGame(currentGameId);
+                
+                // Reset client game states for all participants
+                for (clientHandler client : ServerMain.getClients()) {
+                    if (client.getCurrentGameId() != null && client.getCurrentGameId().equals(game.getGameId())) {
+                        client.currentGameId = null;
+                        client.isSpectator = false;
+                    }
+                }
+                
+            } else {
+                // Check for tie (board full but no winner)
+                boolean boardFull = true;
+                String[][] board = game.getBoard();
+                for (int i = 0; i < game.getDimension(); i++) {
+                    for (int j = 0; j < game.getDimension(); j++) {
+                        if (board[i][j].equals(" ")) {
+                            boardFull = false;
+                            break;
+                        }
+                    }
+                    if (!boardFull) break;
+                }
+                
+                if (boardFull) {
+                    // It's a tie
+                    String gameEndMessage = "GAME_END-It's a tie!";
+                    ServerMain.broadcastToGameSession(currentGameId, gameEndMessage);
+                    
+                    // Clean up and remove game
+                    gameChatLogs.remove(game.getGameId());
+                    ServerMain.getGamesManager().removeGame(currentGameId);
+                    
+                    // Reset client game states
+                    for (clientHandler client : ServerMain.getClients()) {
+                        if (client.getCurrentGameId() != null && client.getCurrentGameId().equals(game.getGameId())) {
+                            client.currentGameId = null;
+                            client.isSpectator = false;
+                        }
+                    }
+                } else {
+                    // Broadcast the move to all players and spectators
+                    String moveMsg = "GAME_MOVE-" + currentGameId + ":" + username + ":" + movePosition + ":" + game.getTurn();
+                    System.out.println("Broadcasting move: " + moveMsg);
+                    ServerMain.broadcastToGameSession(currentGameId, moveMsg);
+                }
             }
+            
         } catch (NumberFormatException e) {
-            sendMessage("ERROR-Invalid position format");
+            sendMessage("ERROR-Invalid move position format");
+            return;
         }
     }
 

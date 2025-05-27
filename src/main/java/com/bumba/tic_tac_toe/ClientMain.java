@@ -284,11 +284,13 @@ public class ClientMain extends Application {
 
             case "GAME_END":
                 System.out.println("Game ended: " + content);
-                // Placeholder for handling game end
-                // Transition back to lobby when game ends
-                // if (gameController != null) {
-                //     Platform.runLater(() -> gameController.handleGameEnd(content));
-                // }
+                if (gameController != null) {
+                    Platform.runLater(() -> {
+                        gameController.handleGameEnd(content);
+                        // Optionally transition back to lobby
+                        // gameController.transitionBackToLobby();
+                    });
+                }
                 break;
 
             case "LEAVE_SUCCESS":
