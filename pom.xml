@@ -87,6 +87,19 @@
               <noHeaderFiles>true</noHeaderFiles>
             </configuration>
           </execution>
+          <execution>
+            <!-- Configuration for running server with: mvn javafx:run@server -->
+            <id>server</id>
+            <configuration>
+              <mainClass>com.bumba.tic_tac_toe/com.bumba.tic_tac_toe.ServerMain</mainClass>
+              <launcher>server</launcher>
+              <jlinkZipName>server</jlinkZipName>
+              <jlinkImageName>server</jlinkImageName>
+              <noManPages>true</noManPages>
+              <stripDebug>true</stripDebug>
+              <noHeaderFiles>true</noHeaderFiles>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
     </plugins>
