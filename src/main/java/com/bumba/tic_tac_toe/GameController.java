@@ -1,16 +1,23 @@
 package com.bumba.tic_tac_toe;
 
-import java.io.IOException;
+import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
@@ -22,9 +29,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.util.Duration;
 
 public class GameController {
     // Game state variables
@@ -52,20 +56,6 @@ public class GameController {
     private Image symbolX;
     private Image symbolO;
     private MediaPlayer clickSfxPlayer;
-
-    @FXML private Scene scene;
-    @FXML private Parent root;
-    @FXML private Stage stage;
-
-    private ClientMain client;
-    private int dimension;
-    private String symbol;
-    ArrayList<ImageView> grids;
-    private Image symbolX;
-    private Image symbolO;
-    private int turn;
-    private Timeline gameTimer;
-    private int secondsElapsed = 0;
 
     @FXML
     public void initialize() {
@@ -110,107 +100,50 @@ public class GameController {
 
     private void loadGameResources() {
         try {
-            // Load X and O symbols with robust error handling
-            symbolX = loadImageResource("/com/bumba/tic_tac_toe/img/X.png", "X");
-            symbolO = loadImageResource("/com/bumba/tic_tac_toe/img/O.png", "O");
+            // Load X and O symbols
+            symbolX = new Image(getClass().getResourceAsStream("/com/bumba/tic_tac_toe/images/x.png"));
+            symbolO = new Image(getClass().getResourceAsStream("/com/bumba/tic_tac_toe/images/o.png"));
+            
+            if (symbolX == null || symbolX.isError()) {
+                System.err.println("Failed to load X symbol image");
+            }
+            
+            if (symbolO == null || symbolO.isError()) {
+                System.err.println("Failed to load O symbol image");
+            }
             
             // Load click sound
             try {
-                URL soundResource = getClass().getResource("/com/bumba/tic_tac_toe/sfx/click.mp3");
-                if (soundResource != null) {
-                    Media clickSound = new Media(soundResource.toExternalForm());
+                URL resource = getClass().getResource("/com/bumba/tic_tac_toe/sounds/click.mp3");
+                if (resource != null) {
+                    Media clickSound = new Media(resource.toString());
                     clickSfxPlayer = new MediaPlayer(clickSound);
-                    clickSfxPlayer.setVolume(0.5);
                 } else {
-                    System.err.println("Click sound not found");
+                    System.err.println("Click sound resource not found");
                 }
             } catch (Exception e) {
-                System.err.println("Error loading sound: " + e.getMessage());
-                // Continue without sound
+                System.err.println("Error loading click sound: " + e.getMessage());
             }
+            
         } catch (Exception e) {
             System.err.println("Error loading resources: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private Image loadImageResource(String path, String symbol) {
-        try {
-            // Try primary path
-            URL resource = getClass().getResource(path);
-            if (resource != null) {
-                return new Image(resource.toExternalForm());
-            }
-            
-            // Try alternative paths
-            String[] altPaths = {
-                "/img/" + symbol + ".png",
-                "/" + symbol + ".png",
-                "/images/" + symbol + ".png"
-            };
-            
-            for (String altPath : altPaths) {
-                resource = getClass().getResource(altPath);
-                if (resource != null) {
-                    return new Image(resource.toExternalForm());
-                }
-            }
-            
-            // Create fallback
-            return createFallbackSymbol(symbol);
-        } catch (Exception e) {
-            System.err.println("Error loading " + symbol + " image: " + e.getMessage());
-            return createFallbackSymbol(symbol);
-        }
-    }
-
-    // Create a fallback symbol image when resources can't be loaded
-    private Image createFallbackSymbol(String symbol) {
-        try {
-            // Create a simple canvas to draw the symbol
-            Canvas canvas = new Canvas(100, 100);
-            GraphicsContext gc = canvas.getGraphicsContext2D();
-            
-            // Clear with white background
-            gc.setFill(Color.WHITE);
-            gc.fillRect(0, 0, 100, 100);
-            
-            // Draw the symbol
-            gc.setStroke(Color.BLACK);
-            gc.setLineWidth(8);
-            
-            if (symbol.equals("X")) {
-                // Draw X
-                gc.strokeLine(20, 20, 80, 80);
-                gc.strokeLine(80, 20, 20, 80);
-            } else {
-                // Draw O
-                gc.strokeOval(20, 20, 60, 60);
-            }
-            
-            // Convert to image
-            SnapshotParameters params = new SnapshotParameters();
-            params.setFill(Color.TRANSPARENT);
-            return canvas.snapshot(params, null);
-        } catch (Exception e) {
-            System.err.println("Error creating fallback symbol: " + e.getMessage());
-            return null;
-        }
-    }
-
     private void initializeChat() {
-        try {
-            if (chatArea != null) {
-                chatArea.getItems().clear();
-                chatArea.getItems().add("Game chat started");
-            }
-            
-            if (sendButton != null) {
-                sendButton.setOnAction(event -> sendChatMessage());
-            }
-        } catch (Exception e) {
-            System.err.println("Error initializing chat: " + e.getMessage());
+        if (chatArea != null) {
+            chatArea.getItems().clear();
+            chatArea.getItems().add("Game chat started. Be respectful!");
         }
+        
+        if (sendButton != null) {
+            sendButton.setOnAction(event -> sendChatMessage());
+        }
+    }
+
+    private void initializeTimer() {
+        // Initialize timer if needed
     }
 
     private void initializePlayerInfo() {
@@ -314,7 +247,9 @@ public class GameController {
         }
         
         // Enable/disable board based on turn
-        board3x3.setDisable(!isMyTurn || gameEnded);
+        if (board3x3 != null) {
+            board3x3.setDisable(!isMyTurn || gameEnded);
+        }
     }
 
     // Method to update dimension when received from server
@@ -419,13 +354,13 @@ public class GameController {
             }
             
             // Send move to server
-            String moveCommand = "move-" + gameId + "-" + position + "-" + currentUsername;
-            ClientMain.getClient().sendMessage(moveCommand);
+            ClientMain.sendGameMove(String.valueOf(position));
             
             // Temporarily disable board until server confirms move
-            board3x3.setDisable(true);
+            isMyTurn = false;
+            updateTurnIndicator();
             
-            System.out.println("Sent move: " + moveCommand);
+            System.out.println("Sent move: position " + position);
             
         } catch (Exception e) {
             System.err.println("Error sending move: " + e.getMessage());
@@ -455,106 +390,57 @@ public class GameController {
         if (position >= 0 && position < grids.size() && grids.get(position) != null) {
             grids.get(position).setImage(symbolToPlace);
             System.out.println("Placed " + (symbolToPlace == symbolX ? "X" : "O") + " at position " + position);
-            
         }
 
-        // Re-enable board ONLY if it's now our turn (opponent just moved)
-        if ((playerWhoMoved.equals(player1) && currentUsername.equals(player2)) ||
-            (playerWhoMoved.equals(player2) && currentUsername.equals(player1))) {
-            System.out.println("Re-enabling board - opponent moved, now our turn");
-            board3x3.setDisable(false);
-            System.out.println("Re-enabling successful");
-        } else {
-            board3x3.setDisable(true);
+        // Update turn - it's now our turn since opponent just moved
+        isMyTurn = true;
+        updateTurnIndicator();
+        
+        // Play sound if available
+        if (clickSfxPlayer != null) {
+            clickSfxPlayer.stop();
+            clickSfxPlayer.play();
         }
     }
     
-   
-    @FXML
-    private void sendChatMessage() {
-        String message = chatBox.getText().trim();
-        if (!message.isEmpty()) {
-            ClientMain.sendChatMessage(message);
-            chatBox.clear();
-        }
-    }
-
-    @FXML
-    private void handleChatKeyPressed(KeyEvent event) {
-        if (event.getCode() == KeyCode.ENTER) {
-            sendChatMessage();
-        }
-    }
-
-    public void addChatMessage(String message) {
-        Platform.runLater(() -> {
-            if (chatArea != null) {
-                chatArea.getItems().add(message);
-                // Auto-scroll to bottom
-                chatArea.scrollTo(chatArea.getItems().size() - 1);
-            }
-        });
-    }
-
-    private void moveFromServer(int move) {
-        //missing processing of server response
-
-        updateBoard(move);
-        board3x3.setDisable(false);
-    }
-
-    private void updateBoard(int move) {
-
-        switch(symbol){
-            case "X":
-                if(turn%2==1){
-                    grids.get(move).setImage(symbolX);
-                }
-                else grids.get(move).setImage(symbolO);
-                break;
-            case "O":
-                if(turn%2==1){
-                    grids.get(move).setImage(symbolO);
-                }
-                else grids.get(move).setImage(symbolX);
-                break;
-        }
-        turn++;
-    }
-
-    // Method called when game ends (from server message)
     public void handleGameEnd(String endReason, String winner) {
+        gameEnded = true;
+        
+        // Get current username
+        String currentUsername = ClientMain.getClient() != null ? ClientMain.getClient().getUsername() : "";
+        
+        // Set game result message
+        if (endReason.equals("WIN")) {
+            if (winner.equals(currentUsername)) {
+                gameResult = "You won!";
+            } else {
+                gameResult = "You lost!";
+            }
+        } else if (endReason.equals("TIE")) {
+            gameResult = "Game tied!";
+        } else if (endReason.equals("FORFEIT")) {
+            if (winner.equals(currentUsername)) {
+                gameResult = "Opponent forfeited. You win!";
+            } else {
+                gameResult = "You forfeited. You lose!";
+            }
+        }
+        
+        // Update UI
+        updateTurnIndicator();
+        
+        // Show game end dialog
         Platform.runLater(() -> {
-            System.out.println("Game ended: " + endReason + ", Winner: " + winner);
-            
-            // Stop the timer
-            if (gameTimer != null) {
-                gameTimer.stop();
-            }
-            
-            // Disable the board
-            if (board3x3 != null) {
-                board3x3.setDisable(true);
-            }
-            
-            // Show game end message
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Game Over");
-            
-            String currentUsername = ClientMain.getClient() != null ? ClientMain.getClient().getUsername() : "";
-            String player1 = ClientMain.getCurrentPlayer1();
-            String player2 = ClientMain.getCurrentPlayer2();
             
             if (endReason.equals("WIN")) {
                 if (winner.equals(currentUsername)) {
                     alert.setHeaderText("You Won!");
                     alert.setContentText("Congratulations! You have won the game.");
-                } else if (winner.equals("NONE")) {
-                    alert.setHeaderText("Game Tied");
-                    alert.setContentText("The game ended in a tie.");
                 } else {
                     alert.setHeaderText("You Lost");
-                    alert.setContentText(winner + " has won the game.");
+                    alert.setContentText("Better luck next time!");
                 }
             } else if (endReason.equals("TIE")) {
                 alert.setHeaderText("Game Tied");
@@ -580,80 +466,50 @@ public class GameController {
             });
         });
     }
-
-
-    @FXML
+    
     private void backToLobbyScene() {
         try {
-            // Stop any ongoing processes
-            if (gameTimer != null) {
-                gameTimer.stop();
-            }
+            // Load lobby scene
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/bumba/tic_tac_toe/lobby.fxml"));
+            Scene scene = new Scene(loader.load(), 800, 600);
             
-            // Load the lobby scene
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/bumba/tic_tac_toe/lobbyScene.fxml"));
-            Parent root = loader.load();
-            Scene scene = new Scene(root);
+            // Get controller
+            LobbyController lobbyController = loader.getController();
+            ClientMain.setLobbyController(lobbyController);
             
-            // Get the current stage
+            // Show lobby
             Stage stage = (Stage) board3x3.getScene().getWindow();
-            
-            // Set the new scene
             stage.setScene(scene);
             stage.setTitle("Tic Tac Toe - Lobby");
-            stage.show();
-            
-            System.out.println("Returned to lobby scene");
-        } catch (IOException e) {
-            System.err.println("Failed to load lobby scene: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error loading lobby: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
-    private void initializeTimer() {
-        try {
-            if (timerLabel != null) {
-                timerLabel.setText("Time: 00:00");
-                
-                // Start timer
-                Timeline timeline = new Timeline(
-                    new KeyFrame(Duration.seconds(1), event -> {
-                        String[] parts = timerLabel.getText().split(":");
-                        int minutes = Integer.parseInt(parts[1].split(":")[0].trim());
-                        int seconds = Integer.parseInt(parts[1].split(":")[1].trim());
-                        
-                        seconds++;
-                        if (seconds >= 60) {
-                            minutes++;
-                            seconds = 0;
-                        }
-                        
-                        timerLabel.setText(String.format("Time: %02d:%02d", minutes, seconds));
-                    })
-                );
-                timeline.setCycleCount(Timeline.INDEFINITE);
-                timeline.play();
-            }
-        } catch (Exception e) {
-            System.err.println("Error initializing timer: " + e.getMessage());
+    
+    public void addChatMessage(String message) {
+        if (chatArea != null) {
+            chatArea.getItems().add(message);
+            chatArea.scrollTo(chatArea.getItems().size() - 1);
+        }
+    }
+    
+    @FXML
+    private void sendChatMessage() {
+        String message = chatBox.getText().trim();
+        if (!message.isEmpty()) {
+            ClientMain.sendChatMessage(message);
+            chatBox.clear();
         }
     }
 
-    private void updateTimerDisplay() {
-        if (timerLabel != null) {
-            int minutes = secondsElapsed / 60;
-            int seconds = secondsElapsed % 60;
-            timerLabel.setText(String.format("Time: %02d:%02d", minutes, seconds));
+    @FXML
+    private void handleChatKeyPressed(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER) {
+            sendChatMessage();
         }
     }
-
-    // Stop timer
-    public void stopTimer() {
-        if (gameTimer != null) {
-            gameTimer.stop();
-        }
-    }
-
+    
     private void handleForfeit() {
         try {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -682,5 +538,9 @@ public class GameController {
             alert.setContentText(message);
             alert.showAndWait();
         });
+    }
+    
+    public Scene getScene() {
+        return board3x3.getScene();
     }
 }

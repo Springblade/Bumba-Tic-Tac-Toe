@@ -52,6 +52,16 @@ public class AuthenController {
         }
     }
 
-
+    public Scene getScene() {
+        // Return the scene from any available control
+        if (login != null && login.getScene() != null) {
+            return login.getScene();
+        } else if (username != null && username.getScene() != null) {
+            return username.getScene();
+        } else if (signup != null && signup.getScene() != null) {
+            return signup.getScene();
+        }
+        return null;
+    }
 
 }

@@ -164,13 +164,13 @@ public class LobbyController {
     }
 
     // Method to update game list from server response
-    public void updateGameListFromServer(String gameListContent) {
+    public void updateGamesList(String content) {
         Platform.runLater(() -> {
             gameListView.getItems().clear();
             
-            if (!gameListContent.isEmpty()) {
-                // Parse: "gameId1:creator1:status1-gameId2:creator2:status2"
-                String[] games = gameListContent.split("-");
+            if (!content.isEmpty()) {
+                // Parse: "gameId1:creator1:status1:dimension1-gameId2:creator2:status2:dimension2"
+                String[] games = content.split("-");
                 
                 for (String gameInfo : games) {
                     if (!gameInfo.trim().isEmpty()) {
@@ -193,14 +193,14 @@ public class LobbyController {
     }
 
     // Method to update rankings from server response
-    public void updateRankingsFromServer(String rankingsContent) {
+    public void updateRankingsList(String content) {
         Platform.runLater(() -> {
             if (rankingsListView != null) {
                 rankingsListView.getItems().clear();
 
-                if (!rankingsContent.isEmpty()) {
+                if (!content.isEmpty()) {
                     // Parse: "username1_elo1-username2_elo2-username3_elo3"
-                    String[] rankingsArray = rankingsContent.split("-");
+                    String[] rankingsArray = content.split("-");
 
                     for (int i = 0; i < rankingsArray.length; i++) {
                         String rankingInfo = rankingsArray[i];
@@ -417,5 +417,17 @@ public class LobbyController {
             System.err.println("Failed to transition to game scene: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public Scene getScene() {
+        // Return the scene from any available control
+        if (gameListView != null && gameListView.getScene() != null) {
+            return gameListView.getScene();
+        } else if (createGameButton != null && createGameButton.getScene() != null) {
+            return createGameButton.getScene();
+        } else if (tabPane != null && tabPane.getScene() != null) {
+            return tabPane.getScene();
+        }
+        return null;
     }
 }

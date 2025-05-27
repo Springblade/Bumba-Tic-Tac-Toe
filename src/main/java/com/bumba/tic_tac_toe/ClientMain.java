@@ -72,26 +72,17 @@ public class ClientMain extends Application {
     public static void setLobbyController(LobbyController controller) {
         lobbyController = controller;
     }
-
+    
     public static void setGameController(GameController controller) {
         gameController = controller;
     }
-
-    public static GameController getGameController() {
-        return gameController;
-    }
-
-    public static void setCurrentGameInfo(String gameId, int dimension) {
-        currentGameId = gameId;
-        currentGameDimension = dimension;
-    }
-
-    public static int getCurrentGameDimension() {
-        return currentGameDimension;
-    }
-
+    
     public static String getCurrentGameId() {
         return currentGameId;
+    }
+    
+    public static int getCurrentGameDimension() {
+        return currentGameDimension;
     }
 
     public static void connect() {
@@ -161,10 +152,6 @@ public class ClientMain extends Application {
             System.err.println("Cannot register: client not connected");
             showConnectionError("Connection Error", "Not connected to server. Please restart the application.");
         }
-    }
-
-    public void sendRequestToServer( String type, String request) {
-        //send request to server with specified type for init of game
     }
 
     public static void requestRankings() {
@@ -262,22 +249,25 @@ public class ClientMain extends Application {
     // Handle game move messages from server
     private static void handleGameMove(String content) {
         try {
-            System.out.println("Received game move: " + content);
+            System.out.println("Processing game move: " + content);
             
-            // Parse move data: gameId:playerWhoMoved:position:nextTurn
-            String[] parts = content.split(":");
-            if (parts.length < 4) {
-                System.err.println("Invalid game move format: " + content);
+            // Parse move data: gameId-position-player-nextTurn
+            String[] parts = content.split("-");
+            if (parts.length < 3) {
+                System.err.println("Invalid move data format: " + content);
                 return;
             }
             
             String gameId = parts[0];
-            String playerWhoMoved = parts[1];
-            int position = Integer.parseInt(parts[2]);
-            String nextTurn = parts[3];
+            int position = Integer.parseInt(parts[1]);
+            String playerWhoMoved = parts[2];
+            String nextTurn = parts.length > 3 ? parts[3] : "";
             
-            // Update current game state
-            currentGameId = gameId;
+            // Check if this is for our current game
+            if (!gameId.equals(currentGameId)) {
+                System.out.println("Move is for a different game, ignoring");
+                return;
+            }
             
             // Update UI if game controller is available
             if (gameController != null) {
@@ -288,9 +278,6 @@ public class ClientMain extends Application {
                         if (!playerWhoMoved.equals(currentUsername)) {
                             gameController.handleOpponentMove(position, playerWhoMoved);
                         }
-                        
-                        // Update turn indicator
-                        gameController.updateTurnIndicator(nextTurn);
                     } catch (Exception e) {
                         System.err.println("Error updating UI for game move: " + e.getMessage());
                         e.printStackTrace();
@@ -540,11 +527,27 @@ public class ClientMain extends Application {
         return client;
     }
 
+    public static void sendChatMessage(String message) {
+        if (client != null && client.isConnected()) {
+            String gameId = currentGameId;
+            if (gameId != null && !gameId.isEmpty()) {
+                client.sendMessage("chat-" + gameId + "-" + client.getUsername() + "-" + message);
+            } else {
+                System.err.println("Cannot send chat: no active game");
+            }
+        } else {
+            System.err.println("Cannot send chat: client not connected");
+        }
+    }
 
     public static void main(String[] args) {
         launch();
     }
 
-
+    public static void setCurrentGameInfo(String gameId, int dimension) {
+        currentGameId = gameId;
+        currentGameDimension = dimension;
+        System.out.println("Game info set: ID=" + gameId + ", Dimension=" + dimension);
+    }
 
 }
